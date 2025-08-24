@@ -7,6 +7,7 @@ Duck Teacher is an innovative web application that helps educators improve their
 ## 🌐 Live Demo
 
 **🚀 [Visit Duck Teacher](https://duck-teacher.vercel.app/)**
+**🚀 [App Usecase Explanation](https://docs.google.com/document/d/1GCKxG5OvUUnqelSKGqJ6N5-gXcbgr8TTmbhx2Wiv9w8/edit?usp=sharing)**
 
 ## ✨ Features
 
