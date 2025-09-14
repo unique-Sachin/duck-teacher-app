@@ -25,15 +25,11 @@ export async function uploadSession(
   formData: FormData,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<UploadResponse> {
-  const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL ;
+  // Use our new Next.js API route instead of external webhook
+  const apiUrl = '/api/duck-analysis';
   
-
-  if (!webhookUrl) {
-    throw new Error("N8N webhook URL not configured");
-  }
-
   try {
-    const response = await axios.post(webhookUrl, formData, {
+    const response = await axios.post(apiUrl, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

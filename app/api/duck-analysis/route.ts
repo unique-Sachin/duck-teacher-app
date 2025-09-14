@@ -1,0 +1,191 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { transcribeAudio, fileToBuffer, isValidAudioFile } from '@/src/lib/transcription';
+import { analyzeTeachingPerformance } from '@/src/lib/llm-analysis';
+
+export async function GET() {
+  // Simulate processing delay (like a real AI analysis)
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  // Sample duck teacher analysis data
+  const sampleAnalysis = {
+    status: "ok",
+    message: "Duck Teacher analysis completed successfully! 🦆",
+    output: {
+      role: "Teaching Performance Analysis",
+      clarity: 8.5,
+      simplicity: 7.8,
+      helpfulness: 9.2,
+      overall_score: 8.5,
+      quick_feedback: "Great explanation! Your passion for the topic really comes through. You broke down complex concepts into digestible pieces and used good examples. Consider adding more interactive elements to boost engagement even further.",
+      strengths: [
+        "Clear and confident delivery",
+        "Good use of analogies and examples", 
+        "Logical flow and structure",
+        "Appropriate pacing for the topic",
+        "Engaging visual elements on whiteboard"
+      ],
+      weaknesses: [
+        "Could use more interactive questions",
+        "Some technical terms need simpler explanations",
+        "Transition between topics could be smoother"
+      ],
+      questions: [
+        "How might you check student understanding during the lesson?",
+        "What would you do if students looked confused?",
+        "How could you make this topic more interactive?",
+        "What real-world applications could you add?"
+      ]
+    }
+  };
+
+  return NextResponse.json(sampleAnalysis);
+}
+
+export async function POST(request: NextRequest) {
+  console.log('🦆 Duck Analysis API called');
+  
+  try {
+    // Parse the uploaded form data
+    const formData = await request.formData();
+    
+    // Extract session data
+    const audio = formData.get('audio') as File;
+    const drawing = formData.get('drawing') as string;
+    const persona = formData.get('persona') as string;
+    const topic = formData.get('topic') as string;
+
+    // Validate required fields
+    if (!audio || !persona || !topic) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message: "Missing required fields: audio, persona, and topic are required",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate persona
+    if (!['student', 'interviewer', 'peer'].includes(persona)) {
+      return NextResponse.json(
+        {
+          status: "error", 
+          message: "Invalid persona. Must be 'student', 'interviewer', or 'peer'",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate audio file
+    if (!isValidAudioFile(audio)) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message: "Invalid audio file format. Please upload a valid audio file.",
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log('📊 Processing session data:', {
+      audioSize: `${(audio.size / (1024 * 1024)).toFixed(2)} MB`,
+      audioType: audio.type,
+      drawingLength: drawing ? `${drawing.length} chars` : 'No drawing',
+      persona,
+      topic
+    });
+
+    // Step 1: Transcribe audio using Deepgram
+    console.log('🎙️ Starting audio transcription...');
+    const audioBuffer = await fileToBuffer(audio);
+    const transcriptionResult = await transcribeAudio(audioBuffer, {
+      model: 'nova-2',
+      language: 'en-US',
+      punctuate: true,
+      smart_format: true,
+      utterances: true
+    });
+
+    if (transcriptionResult.error) {
+      console.error('❌ Transcription failed:', transcriptionResult.error);
+      return NextResponse.json(
+        {
+          status: "error",
+          message: `Audio transcription failed: ${transcriptionResult.error}`,
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Transcription completed:', {
+      textLength: transcriptionResult.text.length,
+      confidence: transcriptionResult.confidence,
+      duration: transcriptionResult.duration
+    });
+
+    // Step 2: Analyze teaching performance using LangChain + Gemini
+    console.log('🧠 Starting LLM analysis...');
+    const analysisInput = {
+      transcript: transcriptionResult.text,
+      whiteboardData: drawing,
+      persona: persona as 'student' | 'interviewer' | 'peer',
+      topic,
+      duration: transcriptionResult.duration,
+      confidence: transcriptionResult.confidence
+    };
+
+    const analysisResult = await analyzeTeachingPerformance(analysisInput);
+
+    console.log('✅ Analysis completed:', {
+      overallScore: analysisResult.overall_score,
+      feedbackLength: analysisResult.quick_feedback.length
+    });
+
+    // Step 3: Return comprehensive analysis
+    const response = {
+      status: "ok",
+      message: `🦆 ${getPersonaGreeting(persona)} Your "${topic}" session has been analyzed!`,
+      output: analysisResult,
+      metadata: {
+        transcription: {
+          text: transcriptionResult.text,
+          confidence: transcriptionResult.confidence,
+          duration: transcriptionResult.duration,
+          wordCount: transcriptionResult.text.split(' ').length
+        },
+        session: {
+          audioSize: audio.size,
+          audioType: audio.type,
+          hasWhiteboard: !!drawing,
+          persona,
+          topic
+        }
+      }
+    };
+
+    return NextResponse.json(response);
+
+  } catch (error) {
+    console.error('❌ Duck analysis error:', error);
+    
+    // Return user-friendly error
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
+    return NextResponse.json(
+      {
+        status: "error",
+        message: `Analysis failed: ${errorMessage}. Please try again!`,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+function getPersonaGreeting(persona: string): string {
+  const greetings = {
+    student: "Excellent learning session!",
+    interviewer: "Great interview practice!",
+    peer: "Awesome collaborative session!"
+  };
+  return greetings[persona as keyof typeof greetings] || "Analysis complete!";
+}
