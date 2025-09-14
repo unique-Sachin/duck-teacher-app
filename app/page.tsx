@@ -1,13 +1,17 @@
 "use client";
-
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 
 export default function MarketingHome() {
   return (
-    <div className="container mx-auto py-16 md:py-24">
-      {/* Hero Section */}
+     <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-1">
+        <div className="container mx-auto py-16 md:py-24">
+          {/* Hero Section */}
       <div className="flex flex-col items-center justify-center text-center space-y-8 max-w-4xl mx-auto">
         {/* Animated Heading */}
         <motion.div
@@ -18,7 +22,7 @@ export default function MarketingHome() {
         >
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
             Learn with{" "}
-            <span className="text-primary">Duck Teacher</span> 🦆
+            <span className="text-primary">Duck</span> 🦆
           </h1>
         </motion.div>
 
@@ -42,11 +46,11 @@ export default function MarketingHome() {
           transition={{ duration: 0.6, ease: "easeOut", delay: 0.4 }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <Button size="lg" asChild variant="outline">
-            <Link href="/session">
+          {/* <Button size="lg" asChild variant="outline"> */}
+            <Link href="/session" as='button'>
               Start Learning Session 🚀
             </Link>
-          </Button>
+          {/* </Button> */}
         </motion.div>
 
         {/* Animated Feature Cards */}
@@ -101,6 +105,9 @@ export default function MarketingHome() {
           </div>
         </motion.div>
       </div>
+    </div>
+    </main>
+      <Footer />
     </div>
   );
 }

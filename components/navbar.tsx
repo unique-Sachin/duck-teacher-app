@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-function Navbar() {
+export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -34,42 +34,5 @@ function Navbar() {
         </div>
       </div>
     </header>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="border-t bg-background">
-      <div className="container mx-auto flex h-16 items-center justify-between py-4 px-4">
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <span className="text-lg">🦆</span>
-          <span>Duck Teacher © 2025</span>
-        </div>
-        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-          <Link href="/about" className="hover:text-foreground transition-colors">
-            About
-          </Link>
-          <Link href="/contact" className="hover:text-foreground transition-colors">
-            Contact
-          </Link>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-export default function MarketingLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">
-        {children}
-      </main>
-      <Footer />
-    </div>
   );
 }
