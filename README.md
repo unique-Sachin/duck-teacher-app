@@ -2,6 +2,10 @@
 
 AI-powered teaching performance analyzer. Record your lesson, sketch on a whiteboard, and get structured feedback from your chosen Duck persona.
 
+**🚀 [App Usecase Explanation](https://drive.google.com/file/d/1Nsx_i3pnf3oYvQWtplvOMJKZKCvApSQ0/view?usp=drive_link)**
+
+**🚀 [Google Doc Explanation](https://docs.google.com/document/d/1GCKxG5OvUUnqelSKGqJ6N5-gXcbgr8TTmbhx2Wiv9w8/edit?usp=sharing)**
+
 ## ✨ Features
 
 - Audio recording with pause/resume and live waveform
