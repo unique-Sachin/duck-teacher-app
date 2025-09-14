@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function Navbar() {
   return (
@@ -26,11 +27,16 @@ export default function Navbar() {
           </Button>
         </nav>
 
-        {/* Mobile menu button */}
-        <div className="md:hidden">
-          <Button asChild size="sm">
-            <Link href="/session">Start Session</Link>
-          </Button>
+        {/* Right side - Theme toggle and mobile menu */}
+        <div className="flex items-center space-x-4">
+          <ThemeToggle />
+          
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button asChild size="sm">
+              <Link href="/session">Start Session</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </header>

@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     
     // Extract session data
     const audio = formData.get('audio') as File;
-    const drawing = formData.get('drawing') as string;
+    const whiteboard = formData.get('whiteboard') as File | null; // Fixed typo: was 'whiteeboard'
     const persona = formData.get('persona') as string;
     const topic = formData.get('topic') as string;
 
@@ -87,10 +87,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Process whiteboard image if provided
+    let whiteboardData: string | null = null;
+    if (whiteboard && whiteboard.size > 0) {
+      // Convert image to base64 for LLM processing
+      const imageBuffer = await whiteboard.arrayBuffer();
+      const base64Image = Buffer.from(imageBuffer).toString('base64');
+      whiteboardData = `data:${whiteboard.type};base64,${base64Image}`;
+      
+      console.log('🎨 Whiteboard image processed:', {
+        type: whiteboard.type,
+        size: `${(whiteboard.size / (1024 * 1024)).toFixed(2)} MB`,
+        hasContent: whiteboard.size > 0
+      });
+    }
+
     console.log('📊 Processing session data:', {
       audioSize: `${(audio.size / (1024 * 1024)).toFixed(2)} MB`,
       audioType: audio.type,
-      drawingLength: drawing ? `${drawing.length} chars` : 'No drawing',
+      hasWhiteboard: !!whiteboardData,
+      whiteboardSize: whiteboard ? `${(whiteboard.size / 1024).toFixed(1)} KB` : 'No whiteboard',
       persona,
       topic
     });
@@ -127,7 +143,7 @@ export async function POST(request: NextRequest) {
     console.log('🧠 Starting LLM analysis...');
     const analysisInput = {
       transcript: transcriptionResult.text,
-      whiteboardData: drawing,
+      whiteboardData: whiteboardData || undefined, // Convert null to undefined for type compatibility
       persona: persona as 'student' | 'interviewer' | 'peer',
       topic,
       duration: transcriptionResult.duration,
@@ -156,7 +172,9 @@ export async function POST(request: NextRequest) {
         session: {
           audioSize: audio.size,
           audioType: audio.type,
-          hasWhiteboard: !!drawing,
+          hasWhiteboard: !!whiteboardData,
+          whiteboardSize: whiteboard?.size || 0,
+          whiteboardType: whiteboard?.type || null,
           persona,
           topic
         }

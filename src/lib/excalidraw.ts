@@ -50,6 +50,7 @@ export interface ExcalidrawAPIRef {
   getSceneElements: () => readonly ExcalidrawElement[];
   getAppState: () => ExcalidrawAppState;
   getFiles: () => ExcalidrawFiles;
+  exportAsImage?: (type?: 'png' | 'jpeg', quality?: number) => Promise<Blob | null>;
 }
 
 /**
@@ -136,4 +137,64 @@ export function exportAndSerializeScene(apiRef: ExcalidrawAPIRef | null) {
     sizeMB: sizeBytes / (1024 * 1024),
     elementCount: sceneData?.elements?.length || 0,
   };
+}
+
+/**
+ * Export the whiteboard as an image blob
+ * @param apiRef - Reference to the Excalidraw imperative API
+ * @param options - Export options
+ * @returns Object with image blob and metadata
+ */
+export async function exportAsImageBlob(
+  apiRef: ExcalidrawAPIRef | null,
+  options: {
+    type?: 'png' | 'jpeg';
+    quality?: number;
+    scale?: number;
+  } = {}
+) {
+  if (!apiRef) {
+    console.warn("Excalidraw API reference is null");
+    return null;
+  }
+
+  const { type = 'png', quality = 0.95, scale = 2 } = options;
+
+  try {
+    // Dynamic import to avoid SSR issues
+    const { exportToBlob } = await import("@excalidraw/excalidraw");
+    
+    const elements = apiRef.getSceneElements();
+    const appState = apiRef.getAppState();
+    const files = apiRef.getFiles();
+    
+    // Export as image blob with high quality
+    const blob = await exportToBlob({
+      elements,
+      appState: {
+        ...appState,
+        exportBackground: true,
+        exportWithDarkMode: appState.theme === 'dark',
+        exportScale: scale,
+      },
+      files,
+      mimeType: type === 'jpeg' ? 'image/jpeg' : 'image/png',
+      quality: type === 'jpeg' ? quality : undefined,
+    });
+    
+    const sizeBytes = blob.size;
+    const elementCount = elements.length;
+    
+    return {
+      blob,
+      sizeBytes,
+      sizeMB: (sizeBytes / (1024 * 1024)).toFixed(2),
+      elementCount,
+      mimeType: blob.type,
+      hasContent: elementCount > 0,
+    };
+  } catch (error) {
+    console.error("Error exporting Excalidraw scene as image:", error);
+    return null;
+  }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useImperativeHandle, forwardRef } from "react";
+import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
 import "@excalidraw/excalidraw/index.css";
 
@@ -28,10 +29,13 @@ export interface WhiteboardRef {
   resetScene: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getAPIRef: () => any | null;
+  // New image export function
+  exportAsImage: (type?: 'png' | 'jpeg', quality?: number) => Promise<Blob | null>;
 }
 
 export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
   ({ className = "" }, ref) => {
+    const { theme } = useTheme();
     // Store the Excalidraw API reference using official method
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
@@ -75,6 +79,39 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
       getAPIRef: () => {
         return excalidrawAPI;
       },
+      exportAsImage: async (type = 'png', quality = 1.0) => {
+        if (!excalidrawAPI) {
+          console.warn("Excalidraw API not available for image export");
+          return null;
+        }
+        
+        try {
+          // Dynamic import to get the export function
+          const { exportToBlob } = await import("@excalidraw/excalidraw");
+          
+          const elements = excalidrawAPI.getSceneElements();
+          const appState = excalidrawAPI.getAppState();
+          const files = excalidrawAPI.getFiles();
+          
+          // Export as image blob
+          const blob = await exportToBlob({
+            elements,
+            appState: {
+              ...appState,
+              exportBackground: true,
+              exportWithDarkMode: appState.theme === 'dark',
+            },
+            files,
+            mimeType: type === 'jpeg' ? 'image/jpeg' : 'image/png',
+            quality: type === 'jpeg' ? quality : undefined,
+          });
+          
+          return blob;
+        } catch (error) {
+          console.error("Error exporting whiteboard as image:", error);
+          return null;
+        }
+      },
     }));
 
     return (
@@ -91,8 +128,7 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
           initialData={{
             elements: [],
             appState: {
-              viewBackgroundColor: "#ffffff",
-              theme: "light",
+              theme: theme === "light" ? "light" : "dark",
             },
           }}
           UIOptions={{

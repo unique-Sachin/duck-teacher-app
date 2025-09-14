@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { NavbarRecorderControls } from "./NavbarRecorderControls";
 import { SessionStatus } from "./SessionStatus";
 import { useSessionStore } from "@/src/stores/session";
-import { exportAndSerializeScene } from "@/src/lib/excalidraw";
+import { exportAsImageBlob } from "@/src/lib/excalidraw";
 import { uploadSession, prepareUploadPayload, getPayloadInfo, type UploadProgress } from "@/src/lib/uploader";
 import type { WhiteboardRef } from "./Whiteboard";
 import { useRouter } from "next/navigation";
@@ -54,21 +54,30 @@ export function SessionNavbar({ whiteboardRef, onClearBoard }: SessionNavbarProp
     setUploadProgress(null);
 
     try {
-      // Export the whiteboard content using our utility
+      // Export the whiteboard as an image instead of JSON
       const apiRef = whiteboardRef.current?.getAPIRef();
-      const exportResult = exportAndSerializeScene(apiRef);
+      const exportResult = await exportAsImageBlob(apiRef, {
+        type: 'png',
+        quality: 0.95,
+        scale: 2 // Higher resolution for better LLM analysis
+      });
       
-      if (!exportResult.jsonString) {
-        toast.error("Failed to export whiteboard data");
+      if (!exportResult) {
+        toast.error("Failed to export whiteboard image");
         setIsUploading(false);
         return;
       }
 
-      // Save whiteboard data to store
-      setExcalidrawJSON(exportResult.jsonString);
+      // Save whiteboard data to store (keeping for backward compatibility, but storing image info)
+      setExcalidrawJSON(JSON.stringify({
+        hasContent: exportResult.hasContent,
+        elementCount: exportResult.elementCount,
+        sizeBytes: exportResult.sizeBytes,
+        mimeType: exportResult.mimeType
+      }));
 
-      // Prepare upload payload using the uploader utility
-      const formData = prepareUploadPayload(audioBlob, exportResult.jsonString, persona, topic);
+      // Prepare upload payload with image blob
+      const formData = prepareUploadPayload(audioBlob, exportResult.blob, persona, topic);
       
       // Get payload info for logging
       const payloadInfo = getPayloadInfo(formData);

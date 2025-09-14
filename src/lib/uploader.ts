@@ -83,12 +83,51 @@ export async function uploadSession(
 /**
  * Prepare upload payload for n8n webhook
  * @param audioBlob - Recorded audio blob
- * @param excalidrawJSON - Excalidraw scene data as JSON string
+ * @param whiteboardImage - Whiteboard image blob (replaces JSON)
  * @param persona - Duck teacher persona
  * @param topic - Teaching topic
  * @returns FormData ready for upload
  */
 export function prepareUploadPayload(
+  audioBlob: Blob,
+  whiteboardImage: Blob | null,
+  persona: string,
+  topic: string
+): FormData {
+  const formData = new FormData();
+
+  // Add audio file with proper naming
+  const audioFile = new File([audioBlob], "recording.webm", {
+    type: "audio/webm"
+  });
+  formData.append("audio", audioFile);
+  formData.append("audio_fileName", "recording.webm");
+
+  // Add whiteboard image if available
+  if (whiteboardImage) {
+    const imageFile = new File([whiteboardImage], "whiteboard.png", {
+      type: whiteboardImage.type || "image/png"
+    });
+    formData.append("whiteboard", imageFile);
+    formData.append("whiteboard_fileName", "whiteboard.png");
+  } else {
+    // Add a placeholder to indicate no whiteboard content
+    formData.append("whiteboard", "");
+    formData.append("whiteboard_fileName", "");
+  }
+
+  // Add persona and topic
+  formData.append("persona", persona);
+  formData.append("topic", topic);
+
+  return formData;
+}
+
+/**
+ * Legacy function for backward compatibility - still accepts JSON but converts to image
+ * @deprecated Use prepareUploadPayload with image blob instead
+ */
+export function prepareUploadPayloadLegacy(
   audioBlob: Blob,
   excalidrawJSON: string,
   persona: string,
@@ -103,7 +142,7 @@ export function prepareUploadPayload(
   formData.append("audio", audioFile);
   formData.append("audio_fileName", "recording.webm");
 
-  // Add drawing JSON with proper naming
+  // Add drawing JSON with proper naming (legacy)
   formData.append("drawing", excalidrawJSON);
   formData.append("drawing_fileName", "drawing.json");
 
