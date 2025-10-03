@@ -1,7 +1,18 @@
 import { createClient } from '@deepgram/sdk';
 
-// Initialize Deepgram client
-const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+// Lazy initialization of Deepgram client
+let deepgramClient: ReturnType<typeof createClient> | null = null;
+
+function getDeepgramClient() {
+  if (!deepgramClient) {
+    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
+    if (!apiKey) {
+      throw new Error('NEXT_PUBLIC_DEEPGRAM_API_KEY is not set');
+    }
+    deepgramClient = createClient(apiKey);
+  }
+  return deepgramClient;
+}
 
 export interface TranscriptionOptions {
   model?: string;
@@ -56,7 +67,8 @@ export async function transcribeAudio(
     console.log('🎙️ Starting audio transcription with Deepgram...');
     const startTime = Date.now();
 
-    // Transcribe the audio using Deepgram
+    // Get Deepgram client and transcribe the audio
+    const deepgram = getDeepgramClient();
     const { result, error } = await deepgram.listen.prerecorded.transcribeFile(
       audioBuffer,
       transcriptionOptions
@@ -80,7 +92,7 @@ export async function transcribeAudio(
     // Calculate overall confidence
     const words = transcript.words || [];
     const avgConfidence = words.length > 0 
-      ? words.reduce((sum, word) => sum + (word.confidence || 0), 0) / words.length 
+      ? words.reduce((sum: number, word: { word: string; start: number; end: number; confidence: number }) => sum + (word.confidence || 0), 0) / words.length 
       : 0;
 
     // Get metadata
@@ -91,7 +103,7 @@ export async function transcribeAudio(
       text: transcript.transcript || '',
       confidence: Math.round(avgConfidence * 100) / 100,
       duration: Math.round(duration * 100) / 100,
-      words: words.map(word => ({
+      words: words.map((word: { word: string; start: number; end: number; confidence: number }) => ({
         word: word.word,
         start: Math.round(word.start * 100) / 100,
         end: Math.round(word.end * 100) / 100,

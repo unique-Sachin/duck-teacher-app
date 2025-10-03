@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Duck Teacher App",
-  description: "Your AI-powered learning companion",
+  title: "AI Mock Interviews - Practice & Get Feedback",
+  description: "AI-powered mock interviews for System Design and Gen AI roles with instant professional feedback",
 };
 
 export default function RootLayout({

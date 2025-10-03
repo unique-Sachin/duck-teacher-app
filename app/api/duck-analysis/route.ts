@@ -66,11 +66,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate persona
-    if (!['student', 'interviewer', 'peer'].includes(persona)) {
+    if (persona !== 'interviewer') {
       return NextResponse.json(
         {
           status: "error", 
-          message: "Invalid persona. Must be 'student', 'interviewer', or 'peer'",
+          message: "Invalid persona. Must be 'interviewer'",
         },
         { status: 400 }
       );
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     const analysisInput = {
       transcript: transcriptionResult.text,
       whiteboardData: whiteboardData || undefined, // Convert null to undefined for type compatibility
-      persona: persona as 'student' | 'interviewer' | 'peer',
+      persona: persona as 'interviewer',
       topic,
       duration: transcriptionResult.duration,
       confidence: transcriptionResult.confidence
@@ -200,10 +200,5 @@ export async function POST(request: NextRequest) {
 }
 
 function getPersonaGreeting(persona: string): string {
-  const greetings = {
-    student: "Excellent learning session!",
-    interviewer: "Great interview practice!",
-    peer: "Awesome collaborative session!"
-  };
-  return greetings[persona as keyof typeof greetings] || "Analysis complete!";
+  return persona === 'interviewer' ? "Great interview practice!" : "Analysis complete!";
 }

@@ -3,18 +3,29 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
 
-// Initialize Gemini LLM
-const model = new ChatGoogleGenerativeAI({
-  model: 'gemini-2.0-flash',
-  temperature: 0.7,
-  maxOutputTokens: 2048,
-  apiKey: process.env.GOOGLE_API_KEY,
-});
+// Lazy initialization of Gemini LLM
+let modelInstance: ChatGoogleGenerativeAI | null = null;
+
+function getModel() {
+  if (!modelInstance) {
+    const apiKey = process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      throw new Error('GOOGLE_API_KEY is not set');
+    }
+    modelInstance = new ChatGoogleGenerativeAI({
+      model: 'gemini-2.0-flash',
+      temperature: 0.7,
+      maxOutputTokens: 2048,
+      apiKey,
+    });
+  }
+  return modelInstance;
+}
 
 export interface TeachingAnalysisInput {
   transcript: string;
   whiteboardData?: string;
-  persona: 'student' | 'interviewer' | 'peer';
+  persona: 'interviewer';
   topic: string;
   duration: number;
   confidence: number;
@@ -45,45 +56,6 @@ export interface DrawingAnalysis {
 
 // Persona-specific prompt templates
 const PERSONA_PROMPTS = {
-  student: `You are an AI teaching assistant analyzing a learning session from a STUDENT'S perspective. 
-
-The student explained the topic "{topic}" in their own words over {duration} seconds. Audio confidence: {confidence}%.
-
-TRANSCRIPT:
-{transcript}
-
-WHITEBOARD VISUAL CONTENT:
-{whiteboardData}
-
-As a supportive learning companion, provide constructive feedback that encourages continued learning and growth.
-
-Evaluate on these criteria (score 1-10):
-- CLARITY: How well did they articulate their understanding?
-- SIMPLICITY: Did they break down complex ideas appropriately?
-- HELPFULNESS: How useful would this explanation be for their own learning?
-
-Provide your analysis in this EXACT JSON format:
-{{
-  "role": "Student Learning Experience",
-  "clarity": [score 1-10],
-  "simplicity": [score 1-10], 
-  "helpfulness": [score 1-10],
-  "overall_score": [average of the three scores],
-  "quick_feedback": "[2-3 sentences of encouraging feedback focusing on learning progress]",
-  "strengths": ["[3-4 specific strengths in their explanation]"],
-  "weaknesses": ["[2-3 areas for improvement, framed positively]"],
-  "questions": ["[3-4 questions to deepen their understanding of {topic}]"],
-  "drawing_analysis": {{
-    "has_visual_content": [true/false],
-    "visual_description": "[Describe what you see in the whiteboard/drawing]",
-    "alignment_score": [score 1-10 how well the drawing supports the explanation],
-    "visual_effectiveness": [score 1-10 how effective the visuals are for learning],
-    "visual_feedback": "[2-3 sentences about the visual teaching aids]",
-    "visual_strengths": ["[2-3 positive aspects of the visual elements]"],
-    "visual_improvements": ["[2-3 suggestions for better visual aids]"]
-  }}
-}}`,
-
   interviewer: `You are an AI interview coach analyzing a candidate's explanation from an INTERVIEWER'S perspective.
 
 The candidate explained "{topic}" during a technical interview over {duration} seconds. Audio confidence: {confidence}%.
@@ -121,45 +93,6 @@ Provide your analysis in this EXACT JSON format:
     "visual_strengths": ["[2-3 positive aspects of their visual communication]"],
     "visual_improvements": ["[2-3 suggestions for better visual presentation in interviews]"]
   }}
-}}`,
-
-  peer: `You are an AI peer collaborator analyzing a teaching session from a PEER'S perspective.
-
-Your peer explained "{topic}" to help you understand it better over {duration} seconds. Audio confidence: {confidence}%.
-
-TRANSCRIPT:
-{transcript}
-
-WHITEBOARD VISUAL CONTENT:
-{whiteboardData}
-
-As a learning peer, evaluate how well they taught you and how effective their explanation was for collaborative learning.
-
-Evaluate on these criteria (score 1-10):
-- CLARITY: How easy was it to follow their explanation?
-- SIMPLICITY: Did they make complex ideas accessible?
-- HELPFULNESS: How much did this help your understanding?
-
-Provide your analysis in this EXACT JSON format:
-{{
-  "role": "Peer Learning Experience",
-  "clarity": [score 1-10],
-  "simplicity": [score 1-10],
-  "helpfulness": [score 1-10],
-  "overall_score": [average of the three scores],
-  "quick_feedback": "[2-3 sentences of peer feedback on their teaching style]",
-  "strengths": ["[3-4 things they did really well in explaining {topic}]"],
-  "weaknesses": ["[2-3 gentle suggestions for improvement in peer teaching]"],
-  "questions": ["[3-4 questions you'd ask to explore {topic} together]"],
-  "drawing_analysis": {{
-    "has_visual_content": [true/false],
-    "visual_description": "[Describe what you see in the whiteboard/drawing]",
-    "alignment_score": [score 1-10 how well the drawing supports the explanation],
-    "visual_effectiveness": [score 1-10 how effective the visuals are for peer learning],
-    "visual_feedback": "[2-3 sentences about their visual teaching approach]",
-    "visual_strengths": ["[2-3 positive aspects of their visual explanation]"],
-    "visual_improvements": ["[2-3 suggestions for even better visual aids]"]
-  }}
 }}`
 };
 
@@ -180,6 +113,9 @@ export async function analyzeTeachingPerformance(
     
     // Create the prompt
     const prompt = PromptTemplate.fromTemplate(promptTemplate);
+    
+    // Get the model instance
+    const model = getModel();
     
     // Create the analysis chain
     const analysisChain = RunnableSequence.from([
@@ -239,9 +175,7 @@ export async function analyzeTeachingPerformance(
  */
 function createFallbackAnalysis(input: TeachingAnalysisInput): TeachingAnalysisOutput {
   const roleMap = {
-    student: 'Student Learning Experience',
-    interviewer: 'Interview Performance Analysis', 
-    peer: 'Peer Learning Experience'
+    interviewer: 'Interview Performance Analysis'
   };
 
   return {

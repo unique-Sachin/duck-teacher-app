@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-export type DuckPersona = 'student' | 'interviewer' | 'peer';
+export type DuckPersona = 'interviewer';
 
 // Type for the feedback response from n8n
 export interface FeedbackOutput {
@@ -66,7 +66,7 @@ export const useSessionStore = create<SessionState>()(
     (set, get) => ({
       // Initial state
       email: '',
-      persona: 'student', // Default to "Student Duck"
+      persona: 'interviewer', // Default to "Interviewer Duck"
       topic: '',
       audioBlob: null,
       excalidrawJSON: null,
@@ -103,7 +103,7 @@ export const useSessionStore = create<SessionState>()(
       // Reset
       resetSession: () => set({
         email: '',
-        persona: 'student',
+        persona: 'interviewer',
         topic: '',
         audioBlob: null,
         excalidrawJSON: null,
@@ -121,9 +121,7 @@ export const useSessionStore = create<SessionState>()(
 // Helper function to get persona display name
 export const getPersonaDisplayName = (persona: DuckPersona): string => {
   const displayNames: Record<DuckPersona, string> = {
-    student: '🎓 Student Duck',
-    interviewer: '💼 Interviewer Duck', 
-    peer: '👥 Peer Duck'
+    interviewer: '💼 Interviewer Duck'
   };
   return displayNames[persona];
 };

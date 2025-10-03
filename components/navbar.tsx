@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function Navbar() {
@@ -11,7 +10,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
           <span className="text-2xl">🦆</span>
-          <span className="font-bold text-xl">Duck Teacher</span>
+          <span className="font-bold text-xl">AI Mock Interviews</span>
         </Link>
 
         {/* Navigation - Center on larger screens */}
@@ -22,21 +21,17 @@ export default function Navbar() {
           >
             Home
           </Link>
-          <Button asChild>
-            <Link href="/session">Start Session</Link>
-          </Button>
+          <Link 
+            href="/#positions" 
+            className="text-sm font-medium transition-colors hover:text-primary"
+          >
+            Positions
+          </Link>
         </nav>
 
-        {/* Right side - Theme toggle and mobile menu */}
+        {/* Right side - Theme toggle */}
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-          
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <Button asChild size="sm">
-              <Link href="/session">Start Session</Link>
-            </Button>
-          </div>
         </div>
       </div>
     </header>

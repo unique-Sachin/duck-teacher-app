@@ -1,6 +1,50 @@
-# 🦆 Duck Teacher
+# 🦆 AI Mock Interview Platform
 
-AI-powered teaching performance analyzer. Record your lesson, sketch on a whiteboard, and get structured feedback from your chosen Duck persona.
+AI-powered mock interview platfor## ⚙️ Configuration
+
+### Environment Variables
+```bash
+GOOGLE_API_KEY="your_gemini_api_key"
+DEEPGRAM_API_KEY="your_deepgram_api_key"
+```
+
+### Adding New Interview Roles
+To add a new interview position, edit `/src/config/roles.ts`:
+
+```typescript
+export const INTERVIEW_ROLES: Record<string, RoleConfig> = {
+  // ... existing roles
+  "your-new-role": {
+    id: "your-new-role",
+    title: "Your Role Title",
+    icon: YourIcon, // from lucide-react
+    description: "Role description",
+    defaultTopic: "Default interview question",
+    duration: "45-60 min",
+    difficulty: "Intermediate",
+    topics: ["Topic1", "Topic2"],
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
+    borderColor: "border-green-500/20"
+  }
+};
+```
+
+The new role will automatically appear on the homepage and be accessible at `/interview/your-new-role`.
+
+### Customization Options
+- Role configurations: `src/config/roles.ts`
+- Session store: `src/stores/session.ts`
+- Recorder behavior: `src/hooks/useRecorder.ts`
+- Excalidraw helpers: `src/lib/excalidraw.ts`
+- UI theme: `tailwind.config.ts`
+
+## 🧭 App Flow
+
+1) **Homepage** (`app/page.tsx`): User selects an interview position
+2) **Interview Session** (`app/interview/[role]/page.tsx`): Dynamic route based on selected role
+   - Valid routes: `/interview/system-design`, `/interview/genai-developer`
+   - Invalid routes automatically show 404ional feedback. Practice technical interviews for System Design and Gen AI roles with instant AI analysis.
 
 **🚀 [App Usecase Explanation](https://drive.google.com/file/d/1Nsx_i3pnf3oYvQWtplvOMJKZKCvApSQ0/view?usp=drive_link)**
 
@@ -8,18 +52,33 @@ AI-powered teaching performance analyzer. Record your lesson, sketch on a whiteb
 
 ## ✨ Features
 
-- Audio recording with pause/resume and live waveform
-- Excalidraw whiteboard with export to compact JSON
-- Upload to n8n webhook with progress and result routing
-- Feedback page with scores (clarity, simplicity, helpfulness), strengths, weaknesses, and reflection questions
-- Modern UI (Tailwind, shadcn/ui, Radix, Framer Motion)
+- **Multiple Interview Roles**: System Design Engineer and Gen AI Developer positions
+- **Audio Recording**: Real-time recording with pause/resume and live waveform visualization
+- **Interactive Whiteboard**: Excalidraw integration for diagrams and visual explanations
+- **AI-Powered Feedback**: Instant professional feedback on clarity, simplicity, and helpfulness
+- **Detailed Analysis**: Get strengths, weaknesses, and reflection questions
+- **Modern UI**: Beautiful interface with Tailwind, shadcn/ui, Radix, and Framer Motion
+
+## 🎯 Interview Positions
+
+### System Design Engineer
+- Practice scalability and architecture questions
+- Topics: Distributed Systems, Database Design, System Architecture
+- Example: "Design a scalable URL shortener service"
+
+### Gen AI Developer
+- Master GenAI technical interviews
+- Topics: LLMs, Prompt Engineering, RAG, AI Applications
+- Example: "Explain how RAG (Retrieval Augmented Generation) works"
 
 ## 🛠 Tech stack
 
 - Next.js 15 + React 19 + TypeScript
 - Tailwind CSS 4, shadcn/ui, Radix UI, Lucide Icons, Sonner toasts
 - Excalidraw, MediaRecorder/Web Audio APIs
-- Zustand state, Axios for uploads
+- Zustand state management
+- Google Gemini 2.0 Flash (LangChain)
+- Deepgram for audio transcription
 
 ## 🚀 Getting started
 
@@ -34,7 +93,8 @@ npm install
 2) Configure env
 Create `.env.local` in the project root:
 ```bash
-NEXT_PUBLIC_N8N_WEBHOOK_URL="https://your-n8n-instance/webhook/concept-feedback"
+GOOGLE_API_KEY="your_gemini_api_key"
+DEEPGRAM_API_KEY="your_deepgram_api_key"
 ```
 3) Run dev server
 ```bash
