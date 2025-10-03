@@ -9,7 +9,7 @@ const model = new ChatGoogleGenerativeAI({
   model: 'gemini-2.0-flash',
   temperature: 0.8,
   maxOutputTokens: 500,
-  apiKey: "AIzaSyDKNpZiU40K2VaO1dCAxOSxplH56_ft4hg",
+  apiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY,
 });
 
 export interface InterviewContext {
