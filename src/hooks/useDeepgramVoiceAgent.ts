@@ -13,23 +13,35 @@ export interface TranscriptMessage {
 
 interface UseDeepgramVoiceAgentProps {
   roleId: string;
+  interviewDuration?: number; // Duration in minutes (default: 30)
   onTranscriptUpdate?: (message: TranscriptMessage) => void;
   onStatusChange?: (status: AgentStatus) => void;
   onError?: (error: Error) => void;
   onInterviewComplete?: (analysis: InterviewAnalysis) => void;
+  onTimeWarning?: (remainingMinutes: number) => void;
 }
 
 export function useDeepgramVoiceAgent({
   roleId,
+  interviewDuration = 30, // Default 30 minutes
   onTranscriptUpdate,
   onStatusChange,
   onError,
-  onInterviewComplete
+  onInterviewComplete,
+  onTimeWarning
 }: UseDeepgramVoiceAgentProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [agentStatus, setAgentStatus] = useState<AgentStatus>('idle');
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState<string>(''); // Real-time interim text
+  const [isInterimFinal, setIsInterimFinal] = useState(false); // Whether interim should show as final
+  
+  // Timer state
+  const [remainingTime, setRemainingTime] = useState(interviewDuration * 60); // in seconds
+  const [isTimeUp, setIsTimeUp] = useState(false);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number | null>(null);
   
   const connectionRef = useRef<LiveClient | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -42,7 +54,9 @@ export function useDeepgramVoiceAgent({
     roleId,
     conversationHistory: [],
     askedQuestionIds: [],
-    userResponses: []
+    userResponses: [],
+    followUpCount: 0,
+    remainingTimeSeconds: interviewDuration * 60
   });
 
   // Track current utterance
@@ -50,6 +64,70 @@ export function useDeepgramVoiceAgent({
   
   // Track whether we should send audio to Deepgram (only when AI is listening)
   const shouldSendAudioRef = useRef<boolean>(false);
+
+  /**
+   * Start the interview timer
+   */
+  const startTimer = () => {
+    startTimeRef.current = Date.now();
+    
+    timerIntervalRef.current = setInterval(() => {
+      if (!startTimeRef.current) return;
+      
+      const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      const remaining = Math.max(0, (interviewDuration * 60) - elapsed);
+      
+      setRemainingTime(remaining);
+      interviewContextRef.current.remainingTimeSeconds = remaining;
+      
+      // Time warnings
+      if (remaining === 300 && onTimeWarning) { // 5 minutes warning
+        onTimeWarning(5);
+      } else if (remaining === 120 && onTimeWarning) { // 2 minutes warning
+        onTimeWarning(2);
+      } else if (remaining === 60 && onTimeWarning) { // 1 minute warning
+        onTimeWarning(1);
+      }
+      
+      // Time's up!
+      if (remaining === 0) {
+        setIsTimeUp(true);
+        handleTimeUp();
+      }
+    }, 1000);
+  };
+
+  /**
+   * Stop the timer
+   */
+  const stopTimer = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    startTimeRef.current = null;
+  };
+
+  /**
+   * Handle interview time up
+   */
+  const handleTimeUp = async () => {
+    console.log('⏰ Interview time is up!');
+    
+    // If user is currently speaking, let them finish current utterance
+    // The UtteranceEnd event will handle the final response
+    if (agentStatus === 'listening' && currentUtteranceRef.current.trim()) {
+      // Wait a bit for utterance to complete
+      setTimeout(() => {
+        if (isConnected) {
+          handleInterviewEnd();
+        }
+      }, 3000);
+    } else {
+      // End immediately
+      handleInterviewEnd();
+    }
+  };
 
   const updateStatus = (status: AgentStatus) => {
     setAgentStatus(status);
@@ -197,6 +275,9 @@ export function useDeepgramVoiceAgent({
         // Initialize audio sending as disabled (AI will speak first)
         shouldSendAudioRef.current = false;
         
+        // Start the interview timer
+        startTimer();
+        
         // Start keep-alive mechanism
         keepAliveIntervalRef.current = setInterval(() => {
           if (connection) {
@@ -235,9 +316,14 @@ export function useDeepgramVoiceAgent({
             // Accumulate all final transcript chunks
             console.log('Final transcript chunk:', transcriptText);
             currentUtteranceRef.current += transcriptText + ' ';
+            // Update interim to show the full accumulated text (keeps it visible with solid border)
+            setInterimTranscript(currentUtteranceRef.current.trim());
+            setIsInterimFinal(false); // Keep updating until utterance ends
           } else {
-            // Log interim results for debugging
-            console.log('Interim transcript:', transcriptText);
+            // Show interim results - Deepgram sends the full utterance so far, not incremental
+            // Just replace, don't concatenate (it already contains all previous words)
+            setInterimTranscript(transcriptText);
+            setIsInterimFinal(false);
           }
         }
       });
@@ -256,25 +342,37 @@ export function useDeepgramVoiceAgent({
         const userMessage = currentUtteranceRef.current.trim();
         
         if (userMessage) {
-          // Add user message to transcript
-          const message: TranscriptMessage = {
-            role: 'user',
-            content: userMessage,
-            timestamp: new Date()
-          };
-          addTranscriptMessage(message);
+          // Mark interim as final (shows solid border)
+          setIsInterimFinal(true);
           
-          // Store in context
-          interviewContextRef.current.userResponses.push(userMessage);
-          
-          // Reset for next utterance
-          currentUtteranceRef.current = '';
-          
-          // Generate AI response
-          generateAndSpeakResponse(userMessage);
+          // After a short delay, move to transcript and clear interim
+          setTimeout(() => {
+            // Add user message to transcript
+            const message: TranscriptMessage = {
+              role: 'user',
+              content: userMessage,
+              timestamp: new Date()
+            };
+            addTranscriptMessage(message);
+            
+            // Store in context
+            interviewContextRef.current.userResponses.push(userMessage);
+            
+            // Clear interim display
+            setInterimTranscript('');
+            setIsInterimFinal(false);
+            
+            // Reset for next utterance
+            currentUtteranceRef.current = '';
+            
+            // Generate AI response
+            generateAndSpeakResponse(userMessage);
+          }, 300); // Short delay to show solid border transition
         } else {
           console.warn('UtteranceEnd but no text captured');
           currentUtteranceRef.current = '';
+          setInterimTranscript('');
+          setIsInterimFinal(false);
         }
       });
 
@@ -322,6 +420,12 @@ export function useDeepgramVoiceAgent({
   };
 
   const stopConnection = () => {
+    // Stop timer
+    stopTimer();
+    
+    // Clear interim transcript
+    setInterimTranscript('');
+    
     // Clear keep-alive interval
     if (keepAliveIntervalRef.current) {
       clearInterval(keepAliveIntervalRef.current);
@@ -358,11 +462,16 @@ export function useDeepgramVoiceAgent({
 
   const clearTranscript = () => {
     setTranscript([]);
+    setInterimTranscript('');
+    setRemainingTime(interviewDuration * 60);
+    setIsTimeUp(false);
     interviewContextRef.current = {
       roleId,
       conversationHistory: [],
       askedQuestionIds: [],
-      userResponses: []
+      userResponses: [],
+      followUpCount: 0,
+      remainingTimeSeconds: interviewDuration * 60
     };
   };
 
@@ -378,7 +487,11 @@ export function useDeepgramVoiceAgent({
     isConnected,
     agentStatus,
     transcript,
+    interimTranscript,
+    isInterimFinal,
     isProcessing,
+    remainingTime,
+    isTimeUp,
     startConnection,
     stopConnection,
     clearTranscript

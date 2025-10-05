@@ -18,6 +18,8 @@ export interface InterviewContext {
   currentQuestionId?: string;
   askedQuestionIds: string[];
   userResponses: string[];
+  followUpCount?: number; // Track follow-ups for current question
+  remainingTimeSeconds?: number; // Track remaining interview time
 }
 
 export interface InterviewerResponse {
@@ -58,36 +60,67 @@ export async function generateInterviewerResponse(
 
     // If we have a latest response, analyze it and decide next action
     if (latestUserResponse && context.currentQuestionId) {
-      // Use LLM to analyze the response and decide whether to ask follow-up or move to next question
-      const decision = await decideNextAction(context, latestUserResponse);
+      // Check remaining time - if less than 2 minutes, gracefully conclude
+      const remainingTimeMinutes = Math.floor((context.remainingTimeSeconds || 0) / 60);
       
-      if (decision.shouldAskFollowUp) {
-        // Get a follow-up question
-        const followUp = getFollowUpQuestion(context.currentQuestionId, context.roleId);
+      if (remainingTimeMinutes < 1) {
+        return {
+          message: "Thank you for that answer. I see we're running low on time, so let's conclude the interview here. You've provided great insights today. We'll analyze your responses and get back to you soon with feedback.",
+          shouldContinue: false,
+          isFollowUp: false
+        };
+      }
+      
+      // Initialize follow-up counter if not exists
+      const currentFollowUpCount = context.followUpCount || 0;
+      
+      // Strict limit: Only allow 1 follow-up per question
+      // Also check if response is too short (less than 50 words)
+      const responseWordCount = latestUserResponse.trim().split(/\s+/).length;
+      const shouldConsiderFollowUp = currentFollowUpCount < 1 && responseWordCount < 50;
+      
+      // Default acknowledgment
+      let acknowledgment = "Thank you for that answer.";
+      
+      if (shouldConsiderFollowUp) {
+        // Use LLM to analyze the response and decide whether to ask follow-up
+        const decision = await decideNextAction(context, latestUserResponse);
+        acknowledgment = decision.acknowledgment;
         
-        if (followUp) {
-          return {
-            message: `${decision.acknowledgment} ${followUp}`,
-            questionId: context.currentQuestionId,
-            shouldContinue: true,
-            isFollowUp: true
-          };
+        if (decision.shouldAskFollowUp) {
+          // Get a follow-up question
+          const followUp = getFollowUpQuestion(context.currentQuestionId, context.roleId);
+          
+          if (followUp) {
+            // Increment follow-up counter
+            context.followUpCount = currentFollowUpCount + 1;
+            
+            return {
+              message: `${acknowledgment} ${followUp}`,
+              questionId: context.currentQuestionId,
+              shouldContinue: true,
+              isFollowUp: true
+            };
+          }
         }
       }
+
+      // Reset follow-up counter for next question
+      context.followUpCount = 0;
 
       // Move to next question
       const nextQuestion = getRandomQuestion(context.roleId, context.askedQuestionIds);
       
       if (!nextQuestion) {
         return {
-          message: `${decision.acknowledgment} That concludes our technical interview. Thank you for your thoughtful responses! We'll analyze your performance and get back to you soon.`,
+          message: `${acknowledgment} That concludes our technical interview. Thank you for your thoughtful responses! We'll analyze your performance and get back to you soon.`,
           shouldContinue: false,
           isFollowUp: false
         };
       }
 
       return {
-        message: `${decision.acknowledgment} Let's move on to the next topic. ${nextQuestion.question}`,
+        message: `${acknowledgment} Let's move on to the next topic. ${nextQuestion.question}`,
         questionId: nextQuestion.id,
         shouldContinue: true,
         isFollowUp: false
@@ -119,23 +152,23 @@ async function decideNextAction(
   userResponse: string
 ): Promise<{ shouldAskFollowUp: boolean; acknowledgment: string }> {
   try {
-    const prompt = PromptTemplate.fromTemplate(`You are an experienced technical interviewer. 
+    const prompt = PromptTemplate.fromTemplate(`You are an experienced technical interviewer conducting an efficient interview.
 
 The candidate just answered: "{userResponse}"
 
-Based on this response, decide:
-1. Should I ask a follow-up question to dive deeper? (yes/no)
-2. Provide a brief acknowledgment (1-2 sentences, professional and encouraging)
+DECISION CRITERIA FOR FOLLOW-UP:
+- Ask follow-up ONLY if the answer is extremely brief (less than 2-3 sentences) OR completely off-topic
+- If the candidate gave any reasonable attempt at answering, move on
+- If the answer shows ANY depth or examples, move on
+- You can only ask 2 follow-up per question maximum (currently at {followUpCount})
 
-Consider:
-- If the answer is too brief or vague, ask follow-up
-- If the answer is comprehensive and detailed, move on
-- If the answer shows interesting points worth exploring, ask follow-up
-- Keep the interview moving; don't ask more than 2 follow-ups per question
+Provide:
+1. should_ask_followup: true ONLY if answer is too brief or unclear (be strict!)
+2. acknowledgment: Brief, encouraging (1 sentence only)
 
 Respond ONLY in this JSON format:
 {{
-  "should_ask_followup": true/false,
+  "should_ask_followup": false,
   "acknowledgment": "Your acknowledgment here"
 }}
 `);
@@ -146,7 +179,11 @@ Respond ONLY in this JSON format:
       new StringOutputParser(),
     ]);
 
-    const result = await chain.invoke({ userResponse });
+    const result = await chain.invoke({ 
+      userResponse, 
+      followUpCount: context.followUpCount || 0,
+    });
+    console.log('LLM decision result:', result);
     const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(cleaned);
 
@@ -157,10 +194,10 @@ Respond ONLY in this JSON format:
 
   } catch (error) {
     console.error('Failed to decide next action:', error);
-    // Default behavior: move to next question
+    // Default behavior: DON'T ask follow-up, move to next question
     return {
       shouldAskFollowUp: false,
-      acknowledgment: "Thank you for sharing your perspective."
+      acknowledgment: "Thank you for that answer."
     };
   }
 }
@@ -266,26 +303,15 @@ function ensureArray(arr: unknown, minLength: number = 3): string[] {
 
 function createFallbackAnalysis(): InterviewAnalysis {
   return {
-    technical_knowledge: 7.5,
-    communication: 7.5,
-    problem_solving: 7.5,
-    experience: 7.5,
-    overall_score: 7.5,
-    summary: 'The interview was completed successfully. The candidate demonstrated good technical knowledge and communication skills.',
-    strengths: [
-      'Clear communication',
-      'Good technical foundation',
-      'Willingness to engage'
-    ],
-    areas_for_improvement: [
-      'Could provide more specific examples',
-      'Consider discussing trade-offs in more detail'
-    ],
-    key_insights: [
-      'Candidate shows promise',
-      'Good cultural fit',
-      'Room for growth'
-    ],
-    hiring_recommendation: 'maybe'
+    technical_knowledge: 0,
+    communication: 0,
+    problem_solving: 0,
+    experience: 0,
+    overall_score: 0,
+    summary: 'Failed to analyze interview performance.',
+    strengths: [],
+    areas_for_improvement: [],
+    key_insights: [],
+    hiring_recommendation: 'N/A'
   };
 }

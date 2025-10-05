@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Volume2, VolumeX, Bot, User, Home, Phone, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Bot, User, Home, Phone, PhoneOff, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,11 +25,16 @@ export default function GenAIDeveloperInterview() {
     isConnected,
     agentStatus,
     transcript,
+    interimTranscript,
+    isInterimFinal,
     isProcessing,
+    remainingTime,
+    isTimeUp,
     startConnection,
     stopConnection,
   } = useDeepgramVoiceAgent({
     roleId: 'genai-developer',
+    interviewDuration: 60, // 60 minutes
     onStatusChange: (_status: string) => {
       console.log('Agent status changed:', _status);
     },
@@ -45,6 +50,21 @@ export default function GenAIDeveloperInterview() {
       setInterviewAnalysis(analysis);
       setShowAnalysis(true);
       toast.success('Interview completed! Check out your analysis.');
+    },
+    onTimeWarning: (minutes: number) => {
+      if (minutes === 5) {
+        toast.warning('⏰ 5 minutes remaining in the interview!', {
+          duration: 5000
+        });
+      } else if (minutes === 2) {
+        toast.warning('⚠️ Only 2 minutes left!', {
+          duration: 5000
+        });
+      } else if (minutes === 1) {
+        toast.error('⚠️ Final minute! Interview will end soon.', {
+          duration: 5000
+        });
+      }
     }
   });
 
@@ -109,6 +129,21 @@ export default function GenAIDeveloperInterview() {
     }
   };
 
+  // Format remaining time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Get timer color based on remaining time
+  const getTimerColor = () => {
+    const minutes = Math.floor(remainingTime / 60);
+    if (minutes < 2) return 'text-red-600 dark:text-red-400';
+    if (minutes < 5) return 'text-orange-600 dark:text-orange-400';
+    return 'text-green-600 dark:text-green-400';
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
@@ -129,9 +164,30 @@ export default function GenAIDeveloperInterview() {
             </div>
           </div>
           
-          <Badge className={`${getStatusBadgeColor()} text-white`}>
-            {getStatusText()}
-          </Badge>
+          <div className="flex items-center gap-4">
+            {/* Timer Display */}
+            {isConnected && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-sm"
+              >
+                <Clock className={`h-5 w-5 ${getTimerColor()}`} />
+                <span className={`text-lg font-mono font-bold ${getTimerColor()}`}>
+                  {formatTime(remainingTime)}
+                </span>
+                {isTimeUp && (
+                  <Badge variant="destructive" className="ml-2 animate-pulse">
+                    Time&apos;s Up!
+                  </Badge>
+                )}
+              </motion.div>
+            )}
+            
+            <Badge className={`${getStatusBadgeColor()} text-white`}>
+              {getStatusText()}
+            </Badge>
+          </div>
         </div>
       </header>
 
@@ -404,7 +460,7 @@ export default function GenAIDeveloperInterview() {
             
             <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
               <div className="space-y-4">
-                {transcript.length === 0 ? (
+                {transcript.length === 0 && !interimTranscript ? (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
                     <p>Transcript will appear here once the interview starts...</p>
                   </div>
@@ -441,6 +497,39 @@ export default function GenAIDeveloperInterview() {
                         </div>
                       </motion.div>
                     ))}
+                    
+                    {/* Real-time interim transcript - shows as user speaks */}
+                    {interimTranscript && agentStatus === 'listening' && (
+                      <motion.div
+                        key="interim"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.1 }}
+                        className="flex gap-3 justify-end"
+                      >
+                        <div className="flex gap-3 max-w-[80%] flex-row-reverse">
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarFallback className={`bg-purple-500 ${isInterimFinal ? 'opacity-100' : 'opacity-70'}`}>
+                              <User className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="flex flex-col gap-1 items-end">
+                            <div className={`rounded-2xl px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-100 border-2 ${
+                              isInterimFinal 
+                                ? 'border-purple-500 dark:border-purple-600 border-solid' 
+                                : 'border-purple-300 dark:border-purple-700 border-dashed animate-pulse'
+                            }`}>
+                              <p className={`text-sm ${isInterimFinal ? '' : 'italic'}`}>{interimTranscript}</p>
+                            </div>
+                            <span className="text-xs text-muted-foreground px-2">
+                              {isInterimFinal ? 'Completed' : 'Speaking...'}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
                   </AnimatePresence>
                 )}
               </div>

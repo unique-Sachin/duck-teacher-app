@@ -221,7 +221,8 @@ export function getFollowUpQuestion(questionId: string, roleId: string): string 
  */
 export function getInterviewGreeting(roleId: string): string {
   const greetings: Record<string, string> = {
-    'genai-developer': "Hello! I'm your AI interviewer for the Gen AI Developer position. I'll be asking you a series of questions about generative AI, large language models, and practical implementation. Feel free to take your time with your answers, and I'll provide follow-up questions based on your responses. Are you ready to begin?",
+    // 'genai-developer': "Hello! I'm your AI interviewer for the Gen AI Developer position. I'll be asking you a series of questions about generative AI, large language models, and practical implementation. Feel free to take your time with your answers, and I'll provide follow-up questions based on your responses. Are you ready to begin?",
+    'genai-developer': "Are you ready to start?",
     'system-design': "Hello! I'm your AI interviewer for the System Design position. We'll be discussing various system design scenarios, scalability challenges, and architectural decisions. Feel free to think out loud and ask clarifying questions. Are you ready to start?"
   };
   
