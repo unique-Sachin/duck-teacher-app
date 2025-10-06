@@ -89,7 +89,7 @@ export default function SignUpPage() {
           </div>
           <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
           <CardDescription>
-            Start your interview preparation journey with AI-powered practice
+            Start your performance evaluation journey with Evalyze
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

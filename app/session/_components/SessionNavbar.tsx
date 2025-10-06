@@ -83,7 +83,7 @@ export function SessionNavbar({ whiteboardRef, onClearBoard }: SessionNavbarProp
       const payloadInfo = getPayloadInfo(formData);
 
       // Show upload toast with progress
-      const uploadToastId = toast.loading("Uploading session to Duck Teacher...", {
+      const uploadToastId = toast.loading("Uploading session to Evalyze...", {
         description: `Uploading ${payloadInfo.totalSizeMB} MB`
       });
 
@@ -103,7 +103,7 @@ export function SessionNavbar({ whiteboardRef, onClearBoard }: SessionNavbarProp
         
         toast.success("Session uploaded successfully!", {
           id: uploadToastId,
-          description: result.message || "Your session has been sent to Duck Teacher"
+          description: result.message || "Your session has been sent to Evalyze"
         });
         // Add a small delay to let the toast show, then navigate
         setTimeout(() => {
@@ -132,7 +132,7 @@ export function SessionNavbar({ whiteboardRef, onClearBoard }: SessionNavbarProp
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center space-x-2">
           <span className="text-2xl">🦆</span>
-          <span className="font-bold text-xl">Duck Teacher</span>
+          <span className="font-bold text-xl">Evalyze</span>
         </Link>
         
         <div className="flex items-center space-x-4">
@@ -140,7 +140,7 @@ export function SessionNavbar({ whiteboardRef, onClearBoard }: SessionNavbarProp
           <div className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
             <span>{email}</span>
             <Separator orientation="vertical" className="h-4" />
-            <span className="capitalize">{persona} Duck</span>
+            <span className="capitalize">{persona} Mode</span>
           </div>
 
           {/* Recording Controls */}
@@ -159,7 +159,7 @@ export function SessionNavbar({ whiteboardRef, onClearBoard }: SessionNavbarProp
             Clear
           </Button>
 
-          {/* Send to Duck Button */}
+          {/* Send to Evalyze Button */}
           <Button 
             className="flex items-center gap-2" 
             size="sm"
@@ -169,7 +169,7 @@ export function SessionNavbar({ whiteboardRef, onClearBoard }: SessionNavbarProp
             <Send className="w-4 h-4" />
             {isUploading 
               ? `Uploading${uploadProgress ? ` ${uploadProgress.percentage}%` : '...'}` 
-              : 'Send to Duck 🦆'
+              : 'Send to Evalyze �'
             }
           </Button>
 

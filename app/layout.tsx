@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AuthProvider } from "@/components/providers/auth-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Mock Interviews - Practice & Get Feedback",
-  description: "AI-powered mock interviews for System Design and Gen AI roles with instant professional feedback",
+  title: "Evalyze - AI-Powered Performance Evaluator",
+  description: "AI-powered real-time performance evaluator for interviews, teaching, and enterprise training. Practice and get instant professional feedback.",
 };
 
 export default function RootLayout({
@@ -29,10 +30,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider>
-          {children}
-          <Toaster richColors closeButton />
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            {children}
+            <Toaster richColors closeButton />
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

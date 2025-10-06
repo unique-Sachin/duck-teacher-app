@@ -105,7 +105,7 @@ export default function ResultPage() {
             </div>
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Teaching Analysis Results</h1>
-          <p className="text-muted-foreground text-lg">Your performance feedback from Duck Teacher</p>
+          <p className="text-muted-foreground text-lg">Your performance feedback from Evalyze</p>
           <Separator className="max-w-xs mx-auto" />
         </motion.div>
 

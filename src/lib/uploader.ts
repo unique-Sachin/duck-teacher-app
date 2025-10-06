@@ -84,7 +84,7 @@ export async function uploadSession(
  * Prepare upload payload for n8n webhook
  * @param audioBlob - Recorded audio blob
  * @param whiteboardImage - Whiteboard image blob (replaces JSON)
- * @param persona - Duck teacher persona
+ * @param persona - AI evaluator persona
  * @param topic - Teaching topic
  * @returns FormData ready for upload
  */

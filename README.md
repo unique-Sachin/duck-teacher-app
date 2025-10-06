@@ -1,10 +1,13 @@
-# 🦆 AI Mock Interview Platform
+# � Evalyze
 
-AI-powered mock interview platfor## ⚙️ Configuration
+**AI-powered real-time performance evaluator for interviews, teaching, and enterprise training.**
 
+## ⚙️ Configurati    - Use navbar controls to record audio\n    - Draw on the whiteboard\n    - Click \"Send to Evalyze\" to upload audio + drawing JSON to n8n
 ### Environment Variables
 ```bash
-GOOGLE_API_KEY="your_gemini_api_key"
+GOOG    - Use navbar controls to record audio
+    - Draw on the whiteboard
+    - Click "Send to Evalyze" to upload audio + drawing JSON to n8nAPI_KEY="your_gemini_api_key"
 DEEPGRAM_API_KEY="your_deepgram_api_key"
 ```
 
@@ -44,11 +47,11 @@ The new role will automatically appear on the homepage and be accessible at `/in
 1) **Homepage** (`app/page.tsx`): User selects an interview position
 2) **Interview Session** (`app/interview/[role]/page.tsx`): Dynamic route based on selected role
    - Valid routes: `/interview/system-design`, `/interview/genai-developer`
-   - Invalid routes automatically show 404ional feedback. Practice technical interviews for System Design and Gen AI roles with instant AI analysis.
-
-**🚀 [App Usecase Explanation](https://drive.google.com/file/d/1Nsx_i3pnf3oYvQWtplvOMJKZKCvApSQ0/view?usp=drive_link)**
+   - Invalid routes automatically show 404**🚀 [App Usecase Explanation](https://drive.google.com/file/d/1Nsx_i3pnf3oYvQWtplvOMJKZKCvApSQ0/view?usp=drive_link)**
 
 **🚀 [Google Doc Explanation](https://docs.google.com/document/d/1GCKxG5OvUUnqelSKGqJ6N5-gXcbgr8TTmbhx2Wiv9w8/edit?usp=sharing)**
+
+Evalyze is an AI-powered platform that provides real-time performance evaluation for interviews, teaching sessions, and enterprise training. Practice technical interviews for System Design and Gen AI roles with instant AI analysis and comprehensive feedback.
 
 ## ✨ Features
 
@@ -121,11 +124,7 @@ Optional tweaks:
 ## 🧭 App flow
 
 1) Marketing home: `app/(marketing)/page.tsx`
-2) Start Session: opens `app/session/page.tsx`
-    - Initial modal collects email, topic, and persona
-    - Use navbar controls to record audio
-    - Draw on the whiteboard
-    - Click “Send to Duck” to upload audio + drawing JSON to n8n
+2) Start Session: opens `app/session/page.tsx`\n    - Initial modal collects email, topic, and persona\n    - Use navbar controls to record audio\n    - Draw on the whiteboard\n    - Click \"Send to Evalyze\" to upload audio + drawing JSON to n8n
 3) Result page: `app/result/page.tsx` shows feedback from n8n response
 
 ## 📁 Project structure (key parts)

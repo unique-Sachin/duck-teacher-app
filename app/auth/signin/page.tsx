@@ -61,7 +61,7 @@ export default function SignInPage() {
           </div>
           <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
           <CardDescription>
-            Sign in to your account to continue your interview preparation
+            Sign in to continue your performance evaluation journey with Evalyze
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

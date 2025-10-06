@@ -1,4 +1,5 @@
 "use client";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,11 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import { Clock, ArrowRight } from "lucide-react";
+import { Clock, ArrowRight, Loader2 } from "lucide-react";
 import { getAllRoles } from "@/src/config/roles";
 
 export default function MarketingHome() {
+  const { status } = useSession();
   const interviewPositions = getAllRoles();
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
   
   return (
      <div className="min-h-screen flex flex-col">
@@ -27,8 +37,7 @@ export default function MarketingHome() {
           className="w-full"
         >
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-            AI-Powered{" "}
-            <span className="text-primary">Mock Interviews</span> 🦆
+            <span className="text-primary">Evalyze</span> �
           </h1>
         </motion.div>
 
@@ -40,8 +49,7 @@ export default function MarketingHome() {
           className="w-full"
         >
           <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
-            Practice technical interviews with AI feedback. 
-            Choose your role and start preparing for your dream job!
+            AI-powered real-time performance evaluator for interviews, teaching, and enterprise training.
           </p>
         </motion.div>
 
@@ -159,7 +167,7 @@ export default function MarketingHome() {
               Ready to ace your next interview?
             </h2>
             <p className="text-muted-foreground mb-6">
-              Join professionals who are using AI Mock Interviews to improve their technical interview skills and land their dream jobs.
+              Join professionals who are using Evalyze to improve their technical interview skills and land their dream jobs.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild variant="default">

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useSessionStore, type DuckPersona } from "@/src/stores/session";
+import { useSessionStore, type EvaluatorPersona } from "@/src/stores/session";
 
 interface InitialSetupModalProps {
   isOpen: boolean;
@@ -16,7 +16,7 @@ interface InitialSetupModalProps {
 export function InitialSetupModal({ isOpen, onComplete }: InitialSetupModalProps) {
   const { email, persona, topic, setEmail, setPersona, setTopic } = useSessionStore();
   const [tempEmail, setTempEmail] = useState(email);
-  const [tempPersona, setTempPersona] = useState<DuckPersona>(persona);
+  const [tempPersona, setTempPersona] = useState<EvaluatorPersona>(persona);
   const [tempTopic, setTempTopic] = useState(topic);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -42,10 +42,10 @@ export function InitialSetupModal({ isOpen, onComplete }: InitialSetupModalProps
       <DialogContent className="sm:max-w-[600px] overflow-visible" style={{ zIndex: 150 }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            🦆 Welcome to Duck Teacher
+            � Welcome to Evalyze
           </DialogTitle>
           <DialogDescription>
-            Let&apos;s set up your learning session. Choose your email, topic, and duck teacher persona to get started.
+            Let&apos;s set up your learning session. Choose your email, topic, and AI evaluator persona to get started.
           </DialogDescription>
         </DialogHeader>
         
@@ -79,10 +79,10 @@ export function InitialSetupModal({ isOpen, onComplete }: InitialSetupModalProps
 
           {/* Persona Select */}
           <div className="space-y-2 overflow-visible">
-            <Label htmlFor="setup-persona">Choose Your Duck Teacher</Label>
-            <Select value={tempPersona} onValueChange={(value: string) => setTempPersona(value as DuckPersona)}>
+            <Label htmlFor="setup-persona">Choose Your AI Evaluator</Label>
+            <Select value={tempPersona} onValueChange={(value: string) => setTempPersona(value as EvaluatorPersona)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a duck persona" />
+                <SelectValue placeholder="Select an AI evaluator persona" />
               </SelectTrigger>
               <SelectContent 
                 style={{ zIndex: 99999 }}
@@ -93,9 +93,9 @@ export function InitialSetupModal({ isOpen, onComplete }: InitialSetupModalProps
                 avoidCollisions={true}
                 sticky="always"
               >
-                <SelectItem value="student">🎓 Student Duck - Learn with guidance</SelectItem>
-                <SelectItem value="interviewer">💼 Interviewer Duck - Practice interviews</SelectItem>
-                <SelectItem value="peer">👥 Peer Duck - Collaborative learning</SelectItem>
+                <SelectItem value="student">🎓 Student Mode - Learn with guidance</SelectItem>
+                <SelectItem value="interviewer">💼 Interviewer Mode - Practice interviews</SelectItem>
+                <SelectItem value="peer">👥 Peer Mode - Collaborative learning</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -106,7 +106,7 @@ export function InitialSetupModal({ isOpen, onComplete }: InitialSetupModalProps
             <ul className="space-y-1 text-muted-foreground">
               <li>• Draw or write about your topic on the whiteboard</li>
               <li>• Record your explanation using the mic</li>
-              <li>• Send to your duck teacher for personalized feedback</li>
+              <li>• Send to Evalyze for personalized AI feedback</li>
             </ul>
           </div>
 

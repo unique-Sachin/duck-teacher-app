@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-export type DuckPersona = 'interviewer';
+export type EvaluatorPersona = 'interviewer';
 
 // Type for the feedback response from n8n
 export interface FeedbackOutput {
@@ -26,7 +26,7 @@ export interface UploadResponse {
 interface SessionState {
   // Form data
   email: string;
-  persona: DuckPersona;
+  persona: EvaluatorPersona;
   topic: string;
   
   // Recording data
@@ -44,7 +44,7 @@ interface SessionState {
   
   // Actions
   setEmail: (email: string) => void;
-  setPersona: (persona: DuckPersona) => void;
+  setPersona: (persona: EvaluatorPersona) => void;
   setTopic: (topic: string) => void;
   setAudioBlob: (blob: Blob | null) => void;
   setExcalidrawJSON: (json: string | null) => void;
@@ -66,7 +66,7 @@ export const useSessionStore = create<SessionState>()(
     (set, get) => ({
       // Initial state
       email: '',
-      persona: 'interviewer', // Default to "Interviewer Duck"
+      persona: 'interviewer', // Default to Interviewer Mode
       topic: '',
       audioBlob: null,
       excalidrawJSON: null,
@@ -119,9 +119,9 @@ export const useSessionStore = create<SessionState>()(
 );
 
 // Helper function to get persona display name
-export const getPersonaDisplayName = (persona: DuckPersona): string => {
-  const displayNames: Record<DuckPersona, string> = {
-    interviewer: '💼 Interviewer Duck'
+export const getPersonaDisplayName = (persona: EvaluatorPersona): string => {
+  const displayNames: Record<EvaluatorPersona, string> = {
+    interviewer: '💼 Interviewer Mode'
   };
   return displayNames[persona];
 };

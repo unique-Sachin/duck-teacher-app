@@ -6,10 +6,10 @@ export async function GET() {
   // Simulate processing delay (like a real AI analysis)
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  // Sample duck teacher analysis data
+  // Sample Evalyze analysis data
   const sampleAnalysis = {
     status: "ok",
-    message: "Duck Teacher analysis completed successfully! 🦆",
+    message: "Evalyze analysis completed successfully! �",
     output: {
       role: "Teaching Performance Analysis",
       clarity: 8.5,
@@ -42,7 +42,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('🦆 Duck Analysis API called');
+  console.log('� Evalyze Analysis API called');
   
   try {
     // Parse the uploaded form data
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('❌ Duck analysis error:', error);
+    console.error('❌ Evalyze analysis error:', error);
     
     // Return user-friendly error
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
