@@ -137,72 +137,81 @@ export default function GenAIDeveloperInterview() {
             layout="vertical"
           />
 
-          {/* Controls */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-3">
-                {!isConnected ? (
-                  <Button
-                    onClick={handleStartInterview}
-                    size="lg"
-                    className="w-full bg-green-600 hover:bg-green-700"
-                  >
-                    <Phone className="mr-2 h-5 w-5" />
-                    Start Interview
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleEndInterview}
-                    size="lg"
-                    variant="destructive"
-                    className="w-full"
-                  >
-                    <PhoneOff className="mr-2 h-5 w-5" />
-                    End Interview
-                  </Button>
-                )}
+           {/* Control Buttons */}
+          <Card className="p-3">
+            <CardContent className="p-0 space-y-2">
+              {!isConnected ? (
+                <Button
+                  onClick={handleStartInterview}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  size="sm"
+                >
+                  <Phone className="mr-2 h-4 w-4" />
+                  Start Interview
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleEndInterview}
+                  variant="destructive"
+                  className="w-full"
+                  size="sm"
+                >
+                  <PhoneOff className="mr-2 h-4 w-4" />
+                  End Interview
+                </Button>
+              )}
 
-                <div className="flex gap-2">
-                  <Button
-                    onClick={toggleMute}
-                    variant={isMuted ? "destructive" : "secondary"}
-                    className="flex-1"
-                    disabled={!isConnected}
-                  >
-                    {isMuted ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
-                    {isMuted ? 'Unmute' : 'Mute'}
-                  </Button>
-
-                  <Button
-                    onClick={toggleSpeaker}
-                    variant={!isSpeakerOn ? "destructive" : "secondary"}
-                    className="flex-1"
-                    disabled={!isConnected}
-                  >
-                    {isSpeakerOn ? <Volume2 className="mr-2 h-4 w-4" /> : <VolumeX className="mr-2 h-4 w-4" />}
-                    {isSpeakerOn ? 'Speaker' : 'Unmuted'}
-                  </Button>
-                </div>
-
-                <div className="text-center text-xs text-muted-foreground py-2 border-t">
-                  {!isConnected ? (
-                    <p>Click &quot;Start Interview&quot; to begin</p>
-                  ) : (
-                    <p>Interview in progress</p>
-                  )}
-                </div>
-                
-                {/* Processing Indicator */}
-                {isProcessing && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground animate-pulse py-2">
-                    <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <div className="flex gap-2">
+                <Button
+                  onClick={toggleMute}
+                  variant={isMuted ? 'destructive' : 'outline'}
+                  className="flex-1"
+                  disabled={!isConnected}
+                  size="sm"
+                >
+                  {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+                <Button
+                  onClick={toggleSpeaker}
+                  variant={!isSpeakerOn ? 'destructive' : 'outline'}
+                  className="flex-1"
+                  disabled={!isConnected}
+                  size="sm"
+                >
+                  {isSpeakerOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                </Button>
+              </div>
+              {/* Processing Indicator */}
+              {isProcessing && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground animate-pulse py-2">
+                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
                     <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
                   </div>
                 )}
+            </CardContent>
+          </Card>
+
+          {/* Interview Info */}
+          <Card className="p-3">
+            <CardContent className="p-0">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="font-semibold">60 minutes</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Focus:</span>
+                  <span className="font-semibold">Gen AI Developer</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Messages:</span>
+                  <span className="font-semibold">{transcript.length}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
+
         </div>
 
         {/* Right Side: Live Transcript */}

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get API key from environment (server-side only)
-    const apiKey = process.env.DEEPGRAM_API_KEY || process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
+    const apiKey = process.env.DEEPGRAM_API_KEY
     
     if (!apiKey) {
       console.error('Deepgram API key not found');

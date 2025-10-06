@@ -26,6 +26,7 @@ export default function SystemDesignInterviewPage() {
     transcript,
     interimTranscript,
     isInterimFinal,
+    isProcessing,
     remainingTime,
     isTimeUp,
     startConnection,
@@ -199,6 +200,15 @@ export default function SystemDesignInterviewPage() {
               >
                 Clear Whiteboard
               </Button>
+
+              {/* Processing Indicator */}
+              {isProcessing && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground animate-pulse py-2">
+                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="h-2 w-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  </div>
+                )}
             </CardContent>
           </Card>
 
