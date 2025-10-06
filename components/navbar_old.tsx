@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import EvalyzeLogo from "@/components/evalyze-logo";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +23,8 @@ export default function Navbar() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
-          <EvalyzeLogo size="sm" />
+          <span className="text-2xl">�</span>
+          <span className="font-bold text-xl">Evalyze</span>
         </Link>
 
         {/* Navigation - Center on larger screens */}

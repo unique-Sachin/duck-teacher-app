@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
     // Step 3: Return comprehensive analysis
     const response = {
       status: "ok",
-      message: `🦆 ${getPersonaGreeting(persona)} Your "${topic}" session has been analyzed!`,
+      message: `${getPersonaGreeting(persona)} Your "${topic}" session has been analyzed!`,
       output: analysisResult,
       metadata: {
         transcription: {

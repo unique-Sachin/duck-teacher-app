@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import EvalyzeLogo from "@/components/evalyze-logo";
 import { Clock, ArrowRight, Loader2 } from "lucide-react";
 import { getAllRoles } from "@/src/config/roles";
 
@@ -34,11 +35,11 @@ export default function MarketingHome() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="w-full"
+          className="w-full flex justify-center"
         >
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-            <span className="text-primary">Evalyze</span> �
-          </h1>
+          <div className="flex items-center gap-3">
+            <EvalyzeLogo size="xl" />
+          </div>
         </motion.div>
 
         {/* Animated Subheading */}
@@ -167,7 +168,7 @@ export default function MarketingHome() {
               Ready to ace your next interview?
             </h2>
             <p className="text-muted-foreground mb-6">
-              Join professionals who are using Evalyze to improve their technical interview skills and land their dream jobs.
+              Join professionals who are using <EvalyzeLogo size="sm" className="inline-block mx-1" /> to improve their technical interview skills and land their dream jobs.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild variant="default">

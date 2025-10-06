@@ -99,11 +99,6 @@ export default function ResultPage() {
           transition={{ duration: 0.5 }}
           className="text-center mb-8 space-y-4"
         >
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mr-3">
-              <span className="text-2xl">🦆</span>
-            </div>
-          </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Teaching Analysis Results</h1>
           <p className="text-muted-foreground text-lg">Your performance feedback from Evalyze</p>
           <Separator className="max-w-xs mx-auto" />

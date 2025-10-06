@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import EvalyzeLogo from "@/components/evalyze-logo";
 import { Send, Trash2, Home } from "lucide-react";
 import { toast } from "sonner";
 import { NavbarRecorderControls } from "./NavbarRecorderControls";
@@ -131,8 +132,7 @@ export function SessionNavbar({ whiteboardRef, onClearBoard }: SessionNavbarProp
     <header className="border-b bg-background">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center space-x-2">
-          <span className="text-2xl">🦆</span>
-          <span className="font-bold text-xl">Evalyze</span>
+          <EvalyzeLogo size="sm" />
         </Link>
         
         <div className="flex items-center space-x-4">

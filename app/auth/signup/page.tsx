@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import EvalyzeLogo from '@/components/evalyze-logo';
 import { Bot, Loader2 } from 'lucide-react';
 
 export default function SignUpPage() {
@@ -88,8 +89,9 @@ export default function SignUpPage() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>
-            Start your performance evaluation journey with Evalyze
+          <CardDescription className="flex flex-col items-center gap-2">
+            <span>Start your performance evaluation journey with</span>
+            <EvalyzeLogo size="sm" />
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
