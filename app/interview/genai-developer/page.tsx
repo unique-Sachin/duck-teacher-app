@@ -2,16 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Mic, MicOff, Volume2, VolumeX, Home, Phone, PhoneOff, Clock } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useDeepgramVoiceAgent, type TranscriptMessage, type InterviewAnalysis } from '@/src/hooks/useDeepgramVoiceAgent';
 import { toast } from 'sonner';
 import { InterviewAnalysisDialog } from '@/components/InterviewAnalysisDialog';
 import { InterviewParticipants } from '../_components/InterviewParticipants';
 import { LiveTranscript } from '../_components/LiveTranscript';
+import { InterviewNavbar } from '../_components/InterviewNavbar';
 
 export default function GenAIDeveloperInterview() {
   const router = useRouter();
@@ -92,19 +91,6 @@ export default function GenAIDeveloperInterview() {
     toast.info(isSpeakerOn ? 'Speaker muted' : 'Speaker unmuted');
   };
 
-  const getStatusBadgeColor = () => {
-    switch (agentStatus) {
-      case 'listening':
-        return 'bg-green-500';
-      case 'thinking':
-        return 'bg-yellow-500';
-      case 'speaking':
-        return 'bg-blue-500';
-      default:
-        return 'bg-gray-400';
-    }
-  };
-
   const getStatusText = () => {
     switch (agentStatus) {
       case 'listening':
@@ -118,67 +104,19 @@ export default function GenAIDeveloperInterview() {
     }
   };
 
-  // Format remaining time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Get timer color based on remaining time
-  const getTimerColor = () => {
-    const minutes = Math.floor(remainingTime / 60);
-    if (minutes < 2) return 'text-red-600 dark:text-red-400';
-    if (minutes < 5) return 'text-orange-600 dark:text-orange-400';
-    return 'text-green-600 dark:text-green-400';
-  };
-
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push('/')}
-              className="hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <Home className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">Gen AI Developer Interview</h1>
-              <p className="text-sm text-muted-foreground">Voice-based interview with AI</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Timer Display */}
-            {isConnected && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-sm"
-              >
-                <Clock className={`h-5 w-5 ${getTimerColor()}`} />
-                <span className={`text-lg font-mono font-bold ${getTimerColor()}`}>
-                  {formatTime(remainingTime)}
-                </span>
-                {isTimeUp && (
-                  <Badge variant="destructive" className="ml-2 animate-pulse">
-                    Time&apos;s Up!
-                  </Badge>
-                )}
-              </motion.div>
-            )}
-            
-            <Badge className={`${getStatusBadgeColor()} text-white`}>
-              {getStatusText()}
-            </Badge>
-          </div>
-        </div>
-      </header>
+      {/* Interview Navbar */}
+      <InterviewNavbar
+        title="Gen AI Developer Interview"
+        subtitle="Voice-based interview with AI"
+        status={agentStatus}
+        statusText={getStatusText()}
+        showTimer={isConnected}
+        remainingTime={remainingTime}
+        isTimeUp={isTimeUp}
+        onHomeClick={() => router.push('/')}
+      />
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden p-6 flex gap-6">
