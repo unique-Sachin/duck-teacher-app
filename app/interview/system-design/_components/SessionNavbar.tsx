@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import EvalyzeLogo from "@/components/evalyze-logo";
@@ -20,27 +21,19 @@ interface SessionNavbarProps {
 export function SessionNavbar({ onClearBoard }: SessionNavbarProps) {
   const [isUploading] = useState(false);
   const [uploadProgress] = useState<number>(0);
+  const { data: session } = useSession();
 
   const { 
-    email, 
-    persona, 
     audioBlob,
-    isFormValid,
-    hasEmail,
     hasAudio 
   } = useSessionStore();
 
   const handleSendToDuck = async () => {
-    // Validate form before sending
-    if (!isFormValid()) {
-      toast.error("Please complete all required fields", {
-        description: `Missing: ${!hasEmail() ? 'email' : ''} ${!hasAudio() ? 'audio recording' : ''}`.trim()
+    // Validate audio recording
+    if (!audioBlob || !hasAudio()) {
+      toast.error("Please record audio", {
+        description: "You need to record your explanation before submitting"
       });
-      return;
-    }
-
-    if (!audioBlob) {
-      toast.error("No audio recording found");
       return;
     }
 
@@ -85,9 +78,9 @@ export function SessionNavbar({ onClearBoard }: SessionNavbarProps) {
         <div className="flex items-center space-x-4">
           {/* Session Info */}
           <div className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
-            <span>{email}</span>
+            <span>{session?.user?.email || 'User'}</span>
             <Separator orientation="vertical" className="h-4" />
-            <span className="capitalize">{persona} Mode</span>
+            <span>System Design Interview</span>
           </div>
 
           {/* Recording Controls */}
@@ -110,7 +103,7 @@ export function SessionNavbar({ onClearBoard }: SessionNavbarProps) {
           <Button 
             className="flex items-center gap-2" 
             size="sm"
-            disabled={!isFormValid() || isUploading}
+            disabled={!hasAudio() || isUploading}
             onClick={handleSendToDuck}
           >
             <Send className="w-4 h-4" />

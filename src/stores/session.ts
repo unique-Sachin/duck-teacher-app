@@ -25,11 +25,6 @@ export interface UploadResponse {
 }
 
 interface SessionState {
-  // Form data
-  email: string;
-  persona: EvaluatorPersona;
-  topic: string;
-  
   // Recording data
   audioBlob: Blob | null;
   
@@ -44,9 +39,6 @@ interface SessionState {
   uploadResponse: UploadResponse | null;
   
   // Actions
-  setEmail: (email: string) => void;
-  setPersona: (persona: EvaluatorPersona) => void;
-  setTopic: (topic: string) => void;
   setAudioBlob: (blob: Blob | null) => void;
   setExcalidrawJSON: (json: string | null) => void;
   setUploadProgress: (progress: number) => void;
@@ -54,9 +46,7 @@ interface SessionState {
   setUploadResponse: (response: UploadResponse | null) => void;
   
   // Validation helpers
-  isFormValid: () => boolean;
   hasAudio: () => boolean;
-  hasEmail: () => boolean;
   
   // Reset
   resetSession: () => void;
@@ -66,9 +56,6 @@ export const useSessionStore = create<SessionState>()(
   devtools(
     (set, get) => ({
       // Initial state
-      email: '',
-      persona: 'interviewer', // Default to Interviewer Mode
-      topic: '',
       audioBlob: null,
       excalidrawJSON: null,
       uploadProgress: 0,
@@ -76,9 +63,6 @@ export const useSessionStore = create<SessionState>()(
       uploadResponse: null,
       
       // Actions
-      setEmail: (email) => set({ email }),
-      setPersona: (persona) => set({ persona }),
-      setTopic: (topic) => set({ topic }),
       setAudioBlob: (audioBlob) => set({ audioBlob }),
       setExcalidrawJSON: (excalidrawJSON) => set({ excalidrawJSON }),
       setUploadProgress: (uploadProgress) => set({ uploadProgress }),
@@ -86,26 +70,13 @@ export const useSessionStore = create<SessionState>()(
       setUploadResponse: (uploadResponse) => set({ uploadResponse }),
       
       // Validation helpers
-      isFormValid: () => {
-        const state = get();
-        return state.hasEmail() && state.hasAudio();
-      },
-      
       hasAudio: () => {
         const state = get();
         return state.audioBlob !== null;
       },
       
-      hasEmail: () => {
-        const state = get();
-        return state.email.trim() !== '';
-      },
-      
       // Reset
       resetSession: () => set({
-        email: '',
-        persona: 'interviewer',
-        topic: '',
         audioBlob: null,
         excalidrawJSON: null,
         uploadProgress: 0,
@@ -119,21 +90,10 @@ export const useSessionStore = create<SessionState>()(
   )
 );
 
-// Helper function to get persona display name
-export const getPersonaDisplayName = (persona: EvaluatorPersona): string => {
-  const displayNames: Record<EvaluatorPersona, string> = {
-    interviewer: '💼 Interviewer Mode'
-  };
-  return displayNames[persona];
-};
-
 // Helper function to get session summary for uploads
 export const getSessionSummary = () => {
   const state = useSessionStore.getState();
   return {
-    email: state.email,
-    persona: state.persona,
-    topic: state.topic,
     hasAudio: state.hasAudio(),
     hasExcalidrawData: state.excalidrawJSON !== null,
   };
