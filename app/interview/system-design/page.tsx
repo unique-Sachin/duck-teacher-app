@@ -9,7 +9,7 @@ import { SessionNavbar } from "./_components/SessionNavbar";
 import { RecorderProvider } from "@/src/context/RecorderContext";
 import { useSessionStore } from "@/src/stores/session";
 
-export default function SessionPage() {
+export default function SystemDesignInterviewPage() {
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(true);
   const [hasCompletedSetup, setHasCompletedSetup] = useState(false);
   

@@ -45,7 +45,7 @@ export function InitialSetupModal({ isOpen, onComplete }: InitialSetupModalProps
             � Welcome to Evalyze
           </DialogTitle>
           <DialogDescription>
-            Let&apos;s set up your learning session. Choose your email, topic, and AI evaluator persona to get started.
+            Prepare for your system design interview. Enter your details and choose the system design problem youLet&apos;s set up your learning session. Choose your email, topic, and AI evaluator persona to get started.apos;d like to work on.
           </DialogDescription>
         </DialogHeader>
         

@@ -3,7 +3,7 @@ import { devtools } from 'zustand/middleware';
 
 export type EvaluatorPersona = 'interviewer';
 
-// Type for the feedback response from n8n
+// Type for the feedback response (kept for compatibility)
 export interface FeedbackOutput {
   role: string;
   clarity: number;
@@ -16,10 +16,11 @@ export interface FeedbackOutput {
   questions: string[];
 }
 
+// Type for upload response (kept for compatibility)
 export interface UploadResponse {
   status: "ok" | "error";
   message: string;
-  output?: Record<string, unknown>; // n8n feedback data (flexible structure)
+  output?: Record<string, unknown>;
   reportUrl?: string;
 }
 

@@ -1,4 +1,4 @@
-# � Evalyze
+# Evalyze
 
 **AI-powered real-time performance evaluator for interviews, teaching, and enterprise training.**
 
@@ -111,7 +111,7 @@ npm run build
 npm start
 ```
 
-## � Configuration
+##  Configuration
 
 - NEXT_PUBLIC_N8N_WEBHOOK_URL: public webhook the browser will post FormData to. Used in `src/lib/uploader.ts`.
 
@@ -124,7 +124,11 @@ Optional tweaks:
 ## 🧭 App flow
 
 1) Marketing home: `app/(marketing)/page.tsx`
-2) Start Session: opens `app/session/page.tsx`\n    - Initial modal collects email, topic, and persona\n    - Use navbar controls to record audio\n    - Draw on the whiteboard\n    - Click \"Send to Evalyze\" to upload audio + drawing JSON to n8n
+2) Start Session: opens `app/session/page.tsx`
+    - Initial modal collects email, topic, and persona
+    - Use navbar controls to record audio
+    - Draw on the whiteboard
+    - Click “Send to Duck” to upload audio + drawing JSON to n8n
 3) Result page: `app/result/page.tsx` shows feedback from n8n response
 
 ## 📁 Project structure (key parts)
@@ -143,14 +147,14 @@ src/
    stores/session.ts      # Zustand store
 ```
 
-## � Scripts
+##  Scripts
 
 - dev: next dev --turbopack
 - build: next build --turbopack
 - start: next start
 - lint: eslint
 
-## � Notes on environment
+##  Notes on environment
 
 `src/lib/uploader.ts` reads the webhook from `NEXT_PUBLIC_N8N_WEBHOOK_URL`. If unset, it falls back to a default test URL in code. Prefer configuring your own URL via `.env.local`.
 
@@ -158,6 +162,6 @@ src/
 
 MIT — see LICENSE.
 
-## � Support
+##  Support
 
 Open an issue or reach the maintainer.
