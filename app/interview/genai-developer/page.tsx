@@ -202,7 +202,7 @@ export default function GenAIDeveloperInterview() {
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Focus:</span>
-                  <span className="font-semibold">Gen AI Developer</span>
+                  <span className="font-semibold">Gen AI</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Messages:</span>
