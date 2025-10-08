@@ -7,7 +7,7 @@ import { getRandomQuestion, getFollowUpQuestion, getInterviewGreeting } from './
 // Initialize Gemini LLM
 const model = new ChatGoogleGenerativeAI({
   model: 'gemini-2.0-flash',
-  temperature: 0.8,
+  temperature: 0.1,
   maxOutputTokens: 500,
   apiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY,
 });

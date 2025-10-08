@@ -360,7 +360,7 @@ export function useDeepgramVoiceAgent({
         sample_rate: 24000,
         channels: 1,
         interim_results: true,
-        utterance_end_ms: 1500, // 1.5 second pause detection
+        utterance_end_ms: 2500, // 2.5 second pause detection
         vad_events: true
       });
 
