@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient, LiveClient } from '@deepgram/sdk';
 import { generateInterviewerResponse, analyzeInterviewPerformance, type InterviewContext, type InterviewAnalysis } from '@/src/lib/ai-interviewer';
 import { getDeepgramTTSService, disposeTTSService } from '@/src/lib/deepgram-tts';
+import { useMediaPipeProctoring } from './useMediaPipeProctoring';
+import { 
+  initializeProctoringSession, 
+  storeProctoringEvent, 
+  storeAttentionSnapshot,
+  finalizeProctoringSession 
+} from '../lib/proctoring-client'; // Changed to client wrapper
+import { toast } from 'sonner';
 
 export type AgentStatus = 'idle' | 'listening' | 'thinking' | 'speaking';
 
@@ -20,6 +28,7 @@ interface UseDeepgramVoiceAgentProps {
   onInterviewComplete?: (analysis: InterviewAnalysis) => void;
   onTimeWarning?: (remainingMinutes: number) => void;
   interviewId?: string; // Optional: existing interview ID to resume
+  enableProctoring?: boolean; // Enable video proctoring (default: true)
 }
 
 export function useDeepgramVoiceAgent({
@@ -30,7 +39,8 @@ export function useDeepgramVoiceAgent({
   onError,
   onInterviewComplete,
   onTimeWarning,
-  interviewId: initialInterviewId
+  interviewId: initialInterviewId,
+  enableProctoring = true
 }: UseDeepgramVoiceAgentProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [agentStatus, setAgentStatus] = useState<AgentStatus>('idle');
@@ -77,6 +87,49 @@ export function useDeepgramVoiceAgent({
   
   // Track whether we should send audio to Deepgram (only when AI is listening)
   const shouldSendAudioRef = useRef<boolean>(false);
+
+  // Proctoring refs
+  const proctoringSessionIdRef = useRef<string | null>(null);
+  const attentionSnapshotIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const currentQuestionIndexRef = useRef<number>(0);
+
+  // Initialize proctoring hook
+  const proctoring = useMediaPipeProctoring({
+    onEvent: async (event) => {
+      if (!enableProctoring || !proctoringSessionIdRef.current) return;
+      
+      // Store event in database
+      try {
+        await storeProctoringEvent(
+          proctoringSessionIdRef.current,
+          event,
+          currentQuestionIndexRef.current
+        );
+      } catch (error) {
+        console.error('Failed to store proctoring event:', error);
+      }
+      
+      // Show toast notification to user
+      const severityIcons = {
+        LOW: 'ℹ️',
+        MEDIUM: '⚠️',
+        HIGH: '🚨',
+        CRITICAL: '🛑'
+      };
+      const icon = severityIcons[event.severity as keyof typeof severityIcons] || '⚠️';
+      
+      toast.warning(`${icon} ${event.message}`, {
+        description: 'Please maintain your focus on the interview',
+        duration: 3000,
+      });
+    },
+    onMetricsUpdate: (metrics) => {
+      // Optional: Can be used for real-time UI updates
+      console.log('Proctoring metrics:', metrics);
+    },
+    enableLogging: false,
+    detectionInterval: 200
+  });
 
   /**
    * Start the interview timer
@@ -519,6 +572,43 @@ export function useDeepgramVoiceAgent({
         value: shouldSendAudioRef.current 
       });
 
+      // Start proctoring if enabled
+      if (enableProctoring && interviewIdRef.current) {
+        try {
+          console.log('🎥 Initializing proctoring session...');
+          const session = await initializeProctoringSession(interviewIdRef.current);
+          proctoringSessionIdRef.current = session.id;
+          console.log('✅ Proctoring session created:', session.id);
+          
+          const started = await proctoring.start();
+          if (!started) {
+            console.warn('⚠️  Failed to start proctoring camera');
+            toast.error('Failed to start camera monitoring. Interview will continue without proctoring.');
+          } else {
+            console.log('✅ Proctoring camera started');
+            
+            // Start attention snapshot timer (every 10 seconds)
+            attentionSnapshotIntervalRef.current = setInterval(async () => {
+              if (proctoringSessionIdRef.current) {
+                const elapsed = Math.floor((Date.now() - (startTimeRef.current || Date.now())) / 1000);
+                try {
+                  await storeAttentionSnapshot(
+                    proctoringSessionIdRef.current,
+                    elapsed,
+                    proctoring.metrics
+                  );
+                } catch (error) {
+                  console.error('Failed to store attention snapshot:', error);
+                }
+              }
+            }, 10000);
+          }
+        } catch (error) {
+          console.error('Failed to initialize proctoring:', error);
+          toast.error('Proctoring initialization failed. Interview will continue without monitoring.');
+        }
+      }
+
     } catch (error) {
       console.error('Failed to start connection:', error);
       onError?.(error as Error);
@@ -569,6 +659,29 @@ export function useDeepgramVoiceAgent({
       ttsServiceRef.current = null;
     }
 
+    // Stop proctoring if enabled
+    if (enableProctoring && proctoringSessionIdRef.current) {
+      // Clear snapshot interval
+      if (attentionSnapshotIntervalRef.current) {
+        clearInterval(attentionSnapshotIntervalRef.current);
+        attentionSnapshotIntervalRef.current = null;
+      }
+      
+      // Finalize proctoring session
+      const sessionId = proctoringSessionIdRef.current;
+      finalizeProctoringSession(sessionId)
+        .then(() => {
+          console.log('✅ Proctoring session finalized');
+        })
+        .catch((error) => {
+          console.error('Failed to finalize proctoring session:', error);
+        });
+      
+      // Stop proctoring camera
+      proctoring.stop();
+      proctoringSessionIdRef.current = null;
+    }
+
     setIsConnected(false);
     updateStatus('idle');
   };
@@ -608,7 +721,14 @@ export function useDeepgramVoiceAgent({
     interviewId,
     startConnection,
     stopConnection,
-    clearTranscript
+    clearTranscript,
+    proctoring: {
+      isActive: proctoring.isActive,
+      metrics: proctoring.metrics,
+      stats: proctoring.stats,
+      videoRef: proctoring.videoRef,
+      canvasRef: proctoring.canvasRef
+    }
   };
 }
 

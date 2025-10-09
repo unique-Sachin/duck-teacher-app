@@ -117,12 +117,104 @@ export function useMediaPipeProctoring(props: UseMediaPipeProctoringProps = {}) 
   const determineGazeDirection = (headPose: { pitch: number; yaw: number }): string => {
     const { pitch, yaw } = headPose;
     if (Math.abs(yaw) < 20 && Math.abs(pitch) < 15) return 'center';
-    if (yaw > 20) return 'left';
-    if (yaw < -20) return 'right';
+    // Note: Camera is mirrored, so we flip left/right
+    if (yaw > 20) return 'right';  // User turned their head right (appears left in mirror)
+    if (yaw < -20) return 'left';  // User turned their head left (appears right in mirror)
     if (pitch > 15) return 'down';
     if (pitch < -15) return 'up';
     return 'away';
   };
+
+  // Iris-based gaze detection - more accurate than head pose
+  const analyzeIrisGaze = (landmarks: any): { direction: string; deviation: number; isLookingAway: boolean } => {
+    // MediaPipe Face Landmarker indices for iris and eye corners
+    // Left eye: outer corner (33), inner corner (133), iris center (468-473)
+    // Right eye: outer corner (263), inner corner (362), iris center (473-478)
+    
+    const leftEyeOuter = landmarks[33];
+    const leftEyeInner = landmarks[133];
+    const leftIrisCenter = landmarks[468]; // Left iris center
+    
+    const rightEyeOuter = landmarks[263];
+    const rightEyeInner = landmarks[362];
+    const rightIrisCenter = landmarks[473]; // Right iris center
+    
+    // Calculate eye width and iris position relative to eye corners
+    const leftEyeWidth = Math.abs(leftEyeOuter.x - leftEyeInner.x);
+    const leftIrisX = leftIrisCenter.x;
+    const leftEyeCenterX = (leftEyeOuter.x + leftEyeInner.x) / 2;
+    const leftIrisOffset = (leftIrisX - leftEyeCenterX) / leftEyeWidth;
+    
+    const rightEyeWidth = Math.abs(rightEyeOuter.x - rightEyeInner.x);
+    const rightIrisX = rightIrisCenter.x;
+    const rightEyeCenterX = (rightEyeOuter.x + rightEyeInner.x) / 2;
+    const rightIrisOffset = (rightIrisX - rightEyeCenterX) / rightEyeWidth;
+    
+    // Average iris offset from both eyes
+    const avgIrisOffsetX = (leftIrisOffset + rightIrisOffset) / 2;
+    
+    // Calculate vertical position (up/down)
+    const leftEyeTop = landmarks[159];
+    const leftEyeBottom = landmarks[145];
+    const leftEyeHeight = Math.abs(leftEyeTop.y - leftEyeBottom.y);
+    const leftIrisY = leftIrisCenter.y;
+    const leftEyeCenterY = (leftEyeTop.y + leftEyeBottom.y) / 2;
+    const leftIrisOffsetY = (leftIrisY - leftEyeCenterY) / leftEyeHeight;
+    
+    const rightEyeTop = landmarks[386];
+    const rightEyeBottom = landmarks[374];
+    const rightEyeHeight = Math.abs(rightEyeTop.y - rightEyeBottom.y);
+    const rightIrisY = rightIrisCenter.y;
+    const rightEyeCenterY = (rightEyeTop.y + rightEyeBottom.y) / 2;
+    const rightIrisOffsetY = (rightIrisY - rightEyeCenterY) / rightEyeHeight;
+    
+    const avgIrisOffsetY = (leftIrisOffsetY + rightIrisOffsetY) / 2;
+    
+    // Thresholds for gaze detection (more sensitive than head pose)
+    const HORIZONTAL_THRESHOLD = 0.15; // 15% offset from center
+    const VERTICAL_THRESHOLD = 0.2;    // 20% offset from center
+    
+    // Calculate total deviation
+    const deviation = Math.sqrt(avgIrisOffsetX * avgIrisOffsetX + avgIrisOffsetY * avgIrisOffsetY);
+    
+    // Determine direction based on iris position
+    // Camera is mirrored: positive offset = iris moved right in real world = looking left
+    let direction = 'center';
+    if (Math.abs(avgIrisOffsetX) < HORIZONTAL_THRESHOLD && Math.abs(avgIrisOffsetY) < VERTICAL_THRESHOLD) {
+      direction = 'center';
+    } else if (Math.abs(avgIrisOffsetX) > Math.abs(avgIrisOffsetY)) {
+      // Flip left/right because camera is mirrored
+      direction = avgIrisOffsetX > 0 ? 'left' : 'right';
+    } else {
+      direction = avgIrisOffsetY > 0 ? 'down' : 'up';
+    }
+    
+    const isLookingAway = deviation > HORIZONTAL_THRESHOLD || Math.abs(avgIrisOffsetY) > VERTICAL_THRESHOLD;
+    
+    return { direction, deviation, isLookingAway };
+  };
+
+  const detectEyeBlink = useCallback((blendshapes: any[]): boolean => {
+    if (!blendshapes || blendshapes.length === 0) return false;
+    
+    // MediaPipe blendshape indices for eye closure
+    // eyeBlinkLeft and eyeBlinkRight are the key blendshapes
+    const leftEyeBlink = blendshapes.find((bs: any) => bs.categoryName === 'eyeBlinkLeft');
+    const rightEyeBlink = blendshapes.find((bs: any) => bs.categoryName === 'eyeBlinkRight');
+    
+    const leftBlinkScore = leftEyeBlink?.score || 0;
+    const rightBlinkScore = rightEyeBlink?.score || 0;
+    
+    // If either eye is more than 70% closed, consider it a blink
+    const BLINK_THRESHOLD = 0.7;
+    const isBlinking = leftBlinkScore > BLINK_THRESHOLD || rightBlinkScore > BLINK_THRESHOLD;
+    
+    if (isBlinking && enableLogging) {
+      log(`Blink detected: L=${leftBlinkScore.toFixed(2)}, R=${rightBlinkScore.toFixed(2)}`);
+    }
+    
+    return isBlinking;
+  }, [enableLogging, log]);
 
   const sendEvent = useCallback((event: Omit<ProctoringEvent, 'timestamp'>) => {
     const now = Date.now();
@@ -144,22 +236,23 @@ export function useMediaPipeProctoring(props: UseMediaPipeProctoringProps = {}) 
     const ctx = canvas.getContext('2d');
     if (!ctx || video.readyState < 2) return;
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    try {
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const results = faceLandmarkerRef.current.detectForVideo(video, performance.now());
-    const faceCount = results.faceLandmarks?.length || 0;
-    
-    const newMetrics: ProctoringMetrics = {
-      faceDetected: faceCount > 0,
-      faceCount,
-      attentionScore: 100,
-      gazeDirection: 'center',
-      headPose: { pitch: 0, yaw: 0, roll: 0 },
-      faceDistance: 'optimal',
-      lightingQuality: 'good'
-    };
+      const results = faceLandmarkerRef.current.detectForVideo(video, performance.now());
+      const faceCount = results.faceLandmarks?.length || 0;
+      
+      const newMetrics: ProctoringMetrics = {
+        faceDetected: faceCount > 0,
+        faceCount,
+        attentionScore: 100,
+        gazeDirection: 'center',
+        headPose: { pitch: 0, yaw: 0, roll: 0 },
+        faceDistance: 'optimal',
+        lightingQuality: 'good'
+      };
 
     if (faceCount === 0) {
       const timeSince = (Date.now() - lastFaceDetectedTimeRef.current) / 1000;
@@ -172,31 +265,62 @@ export function useMediaPipeProctoring(props: UseMediaPipeProctoringProps = {}) 
       lastFaceDetectedTimeRef.current = Date.now();
     } else {
       lastFaceDetectedTimeRef.current = Date.now();
+      const landmarks = results.faceLandmarks[0];
+      
+      // Analyze iris-based gaze (more accurate)
+      const irisGaze = analyzeIrisGaze(landmarks);
+      newMetrics.gazeDirection = irisGaze.direction;
+      
+      // Also get head pose for additional context
       const matrix = results.facialTransformationMatrixes?.[0];
       if (matrix) {
         const matrixData = matrix.data as unknown as number[];
         const headPose = calculateHeadPose(matrixData);
         newMetrics.headPose = headPose;
-        const gaze = determineGazeDirection(headPose);
-        newMetrics.gazeDirection = gaze;
-        if (gaze !== 'center') {
-          sendEvent({ type: 'looking_away', confidence: 0.8, severity: 'MEDIUM', message: `Looking ${gaze}` });
+        
+        // Combine iris and head pose for better detection
+        const headGaze = determineGazeDirection(headPose);
+        
+        // Check if user is blinking - don't flag as looking away if blinking
+        const blendshapes = results.faceBlendshapes?.[0]?.categories || [];
+        const isBlinking = detectEyeBlink(blendshapes);
+        
+        // If both iris and head indicate looking away AND not blinking, higher confidence
+        if ((irisGaze.isLookingAway || headGaze !== 'center') && !isBlinking) {
+          const confidence = (irisGaze.isLookingAway && headGaze !== 'center') ? 0.95 : 0.75;
+          const direction = irisGaze.isLookingAway ? irisGaze.direction : headGaze;
+          
+          sendEvent({ 
+            type: 'looking_away', 
+            confidence, 
+            severity: 'MEDIUM', 
+            message: `Eyes looking ${direction} (iris tracking)`,
+            metadata: {
+              irisDeviation: irisGaze.deviation.toFixed(2),
+              headYaw: headPose.yaw.toFixed(1),
+              headPitch: headPose.pitch.toFixed(1)
+            }
+          });
+          
+          newMetrics.attentionScore = 70;
+        } else {
+          newMetrics.attentionScore = 100;
         }
       }
-      const landmarks = results.faceLandmarks[0];
-      ctx.strokeStyle = '#00ff00';
-      landmarks.forEach((lm: any) => {
-        ctx.beginPath();
-        ctx.arc(lm.x * canvas.width, lm.y * canvas.height, 1, 0, 2 * Math.PI);
-        ctx.stroke();
-      });
+      
+      // Note: Canvas landmark drawing removed - not shown to candidate
+      // Detection still works, but no visual feedback is drawn
     }
 
     setMetrics(newMetrics);
     onMetricsUpdate?.(newMetrics);
     attentionScoresRef.current.push(newMetrics.attentionScore);
     if (attentionScoresRef.current.length > 100) attentionScoresRef.current.shift();
-  }, [sendEvent, onMetricsUpdate]);
+    } catch (error) {
+      console.error('[Proctoring] Detection error:', error);
+      // Continue running even if one frame fails
+    }
+  }, [sendEvent, onMetricsUpdate, detectEyeBlink]);
 
   const start = async (): Promise<boolean> => {
     try {

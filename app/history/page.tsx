@@ -301,13 +301,11 @@ export default function HistoryPage() {
                             )}
                             <div className="flex flex-col items-end gap-2">
                               {getStatusBadge(interview.status)}
-                              {interview.status === "COMPLETED" && (
-                                <Button variant="outline" size="sm" asChild>
-                                  <Link href={`/result?interviewId=${interview.id}`}>
-                                    View Results
-                                  </Link>
-                                </Button>
-                              )}
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={`/interview/${interview.id}`}>
+                                  View Details
+                                </Link>
+                              </Button>
                             </div>
                           </div>
                         </div>

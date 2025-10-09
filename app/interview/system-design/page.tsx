@@ -1,24 +1,36 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Script from "next/script";
-import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Whiteboard, type WhiteboardRef } from "./_components/Whiteboard";
 import { InterviewNavbar } from "../_components/InterviewNavbar";
-import { InterviewParticipants } from "../_components/InterviewParticipants";
 import { LiveTranscript } from "../_components/LiveTranscript";
 import { InterviewAnalysisDialog } from "@/components/InterviewAnalysisDialog";
 import { useDeepgramVoiceAgent, type InterviewAnalysis } from "@/src/hooks/useDeepgramVoiceAgent";
+import { ProctoringVideoPreview } from "@/components/ProctoringVideoPreview";
 
 export default function SystemDesignInterviewPage() {
+  const router = useRouter();
   const whiteboardRef = useRef<WhiteboardRef>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [interviewAnalysis, setInterviewAnalysis] = useState<InterviewAnalysis | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [showEndConfirmation, setShowEndConfirmation] = useState(false);
 
   const {
     isConnected,
@@ -29,11 +41,14 @@ export default function SystemDesignInterviewPage() {
     isProcessing,
     remainingTime,
     isTimeUp,
+    interviewId,
     startConnection,
     stopConnection,
+    proctoring
   } = useDeepgramVoiceAgent({
     roleId: 'system-design',
     interviewDuration: 45, // 45 minutes for system design
+    enableProctoring: true, // Enable video proctoring
     onStatusChange: (_status: string) => {
       console.log('Agent status changed:', _status);
     },
@@ -78,8 +93,25 @@ export default function SystemDesignInterviewPage() {
   };
 
   const handleEndInterview = () => {
+    setShowEndConfirmation(true);
+  };
+
+  const confirmEndInterview = () => {
+    const currentId = interviewId;
     stopConnection();
+    setShowEndConfirmation(false);
     toast.info('Interview ended');
+    
+    // Redirect to interview detail page after a short delay
+    if (currentId) {
+      setTimeout(() => {
+        router.push(`/interview/${currentId}`);
+      }, 1000);
+    }
+  };
+
+  const cancelEndInterview = () => {
+    setShowEndConfirmation(false);
   };
 
   const toggleMute = () => {
@@ -132,20 +164,41 @@ export default function SystemDesignInterviewPage() {
       <div className="flex-1 overflow-hidden p-6 flex gap-6">
         {/* Left Side: Participant Cards & Controls */}
         <div className="w-80 flex flex-col gap-3 overflow-y-auto">
-          {/* Participant Cards */}
-          <InterviewParticipants
-            interviewerStatus={{
-              status: agentStatus,
-              isMuted: false,
-              isVideoOn: false
-            }}
-            intervieweeStatus={{
-              status: isConnected ? (isMuted ? 'connected' : agentStatus === 'listening' ? 'listening' : 'connected') : 'disconnected',
-              isMuted: isMuted,
-              isVideoOn: false
-            }}
-            layout="vertical"
-          />
+          {/* AI Interviewer Card */}
+          <Card className="border-2 border-blue-200 dark:border-blue-800">
+            <CardContent className="p-0 relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative z-10 w-16 h-16 rounded-xl flex items-center justify-center bg-blue-600">
+                  <Bot className="h-8 w-8 text-white" />
+                </div>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-2.5 pt-6">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-white text-sm leading-tight">AI Interviewer</h3>
+                  <p className="text-[10px] text-gray-300 leading-tight mt-0.5">Conducting the interview</p>
+                </div>
+                <div className="mt-1">
+                  <Badge variant="outline" className="border-white/30 bg-white/10 backdrop-blur-sm text-white text-[10px] px-1.5 py-0 leading-tight h-5">
+                    {agentStatus === 'listening' && '🎤 Listening'}
+                    {agentStatus === 'thinking' && '💭 Thinking'}
+                    {agentStatus === 'speaking' && '🎙️ Speaking'}
+                    {agentStatus === 'idle' && 'Idle'}
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Candidate's Proctoring Video Preview */}
+          {proctoring && (
+            <ProctoringVideoPreview
+              videoRef={proctoring.videoRef}
+              metrics={proctoring.metrics}
+              isActive={proctoring.isActive}
+              name="You"
+              subtitle="Interviewee"
+            />
+          )}
 
           {/* Control Buttons */}
           <Card className="p-3">
@@ -267,6 +320,26 @@ export default function SystemDesignInterviewPage() {
         onOpenChange={setShowAnalysis}
         analysis={interviewAnalysis}
       />
+
+      {/* End Interview Confirmation Dialog */}
+      <Dialog open={showEndConfirmation} onOpenChange={setShowEndConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>End Interview?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to end this interview? Your progress will be saved and you&apos;ll be able to view the full details.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={cancelEndInterview}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmEndInterview}>
+              End Interview
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -15,17 +15,17 @@ model User {
   id            String    @id @default(cuid())
   email         String    @unique
   name          String?
-  password      String?   // hashed password - optional for OAuth users
+  password      String? // hashed password - optional for OAuth users
   emailVerified DateTime?
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
+
   // Relations
-  interviews    Interview[]
-  accounts      Account[]
-  sessions      Session[]
-  
+  interviews Interview[]
+  accounts   Account[]
+  sessions   Session[]
+
   @@map("users")
 }
 
@@ -63,30 +63,31 @@ model Session {
 
 // Interview Session model - stores each interview attempt
 model Interview {
-  id              String   @id @default(cuid())
+  id              String          @id @default(cuid())
   userId          String
-  roleId          String   // 'genai-developer', 'system-design', etc.
+  roleId          String // 'genai-developer', 'system-design', etc.
   status          InterviewStatus @default(IN_PROGRESS)
-  startedAt       DateTime @default(now())
+  startedAt       DateTime        @default(now())
   completedAt     DateTime?
   durationMinutes Int?
-  
+
   // Interview metadata
-  totalQuestions  Int      @default(0)
-  questionsAsked  String[] // Array of question IDs asked
-  
+  totalQuestions Int      @default(0)
+  questionsAsked String[] // Array of question IDs asked
+
   // Analysis results (stored as JSON)
-  analysisScores  Json?    // { technical: 8, communication: 9, problemSolving: 7, experience: 8 }
-  strengths       String[] // Array of strength descriptions
-  improvements    String[] // Areas for improvement
-  insights        String[] // Key insights from the interview
-  recommendation  String?  // 'strong_yes', 'yes', 'maybe', 'no', 'strong_no'
-  overallScore    Float?   // Overall score out of 10
-  
+  analysisScores Json? // { technical: 8, communication: 9, problemSolving: 7, experience: 8 }
+  strengths      String[] // Array of strength descriptions
+  improvements   String[] // Areas for improvement
+  insights       String[] // Key insights from the interview
+  recommendation String? // 'strong_yes', 'yes', 'maybe', 'no', 'strong_no'
+  overallScore   Float? // Overall score out of 10
+
   // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages        Message[]
-  
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages          Message[]
+  proctoringSession ProctoringSession?
+
   @@index([userId])
   @@index([roleId])
   @@index([status])
@@ -98,23 +99,24 @@ enum InterviewStatus {
   IN_PROGRESS
   COMPLETED
   ABANDONED
+  FLAGGED
 }
 
 // Individual message in the conversation
 model Message {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   interviewId String
   role        MessageRole
-  content     String   @db.Text
-  timestamp   DateTime @default(now())
-  
+  content     String      @db.Text
+  timestamp   DateTime    @default(now())
+
   // Optional metadata
-  isFollowUp  Boolean  @default(false)
-  questionId  String?  // ID of the question being asked/answered
-  
+  isFollowUp Boolean @default(false)
+  questionId String? // ID of the question being asked/answered
+
   // Relations
-  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
   @@index([interviewId])
   @@index([role])
   @@index([timestamp])
@@ -134,4 +136,108 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+// Proctoring Session - stores monitoring data for each interview
+model ProctoringSession {
+  id          String @id @default(cuid())
+  interviewId String @unique
+
+  // Session metadata
+  startedAt            DateTime
+  endedAt              DateTime?
+  totalDurationSeconds Int?
+
+  // Aggregate statistics
+  totalViolations       Int @default(0)
+  noFaceDetectedSeconds Int @default(0)
+  multipleFacesCount    Int @default(0)
+  lookingAwayCount      Int @default(0)
+  tabSwitchCount        Int @default(0)
+
+  // Calculated scores
+  averageAttentionScore Float     @default(100)
+  integrityScore        Int       @default(100)
+  riskLevel             RiskLevel @default(VERY_LOW)
+
+  // Pattern analysis (stored as JSON)
+  suspiciousPatterns Json?
+
+  // Relations
+  interview Interview           @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  events    ProctoringEvent[]
+  snapshots AttentionSnapshot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([interviewId])
+  @@map("proctoring_sessions")
+}
+
+// Individual proctoring events (violations only)
+model ProctoringEvent {
+  id        String @id @default(cuid())
+  sessionId String
+
+  // Event details
+  type       String // 'no_face', 'multiple_faces', 'looking_away', etc.
+  timestamp  DateTime
+  confidence Float
+  severity   Severity
+  message    String
+
+  // Contextual data (stored as JSON)
+  metadata Json? // iris deviation, head pose, etc.
+
+  // Association with interview questions
+  questionIndex Int?
+
+  // Relations
+  session ProctoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, timestamp])
+  @@index([type])
+  @@map("proctoring_events")
+}
+
+// Attention snapshots (time-series data for timeline graphs)
+model AttentionSnapshot {
+  id        String @id @default(cuid())
+  sessionId String
+
+  timestamp      DateTime
+  secondsElapsed Int // 0, 10, 20, 30...
+
+  // Metrics at this point in time
+  faceDetected   Boolean
+  faceCount      Int
+  attentionScore Int // 0-100
+  gazeDirection  String
+  headYaw        Float
+  headPitch      Float
+  irisDeviation  Float   @default(0)
+
+  // Relations
+  session ProctoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, timestamp])
+  @@map("attention_snapshots")
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskLevel {
+  VERY_LOW
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }

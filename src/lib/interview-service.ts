@@ -106,6 +106,23 @@ export async function getInterviewWithMessages(interviewId: string, userId?: str
           email: true,
         },
       },
+      proctoringSession: {
+        select: {
+          id: true,
+          startedAt: true,
+          endedAt: true,
+          totalDurationSeconds: true,
+          totalViolations: true,
+          noFaceDetectedSeconds: true,
+          multipleFacesCount: true,
+          lookingAwayCount: true,
+          tabSwitchCount: true,
+          averageAttentionScore: true,
+          integrityScore: true,
+          riskLevel: true,
+          suspiciousPatterns: true,
+        },
+      },
     },
   });
 }
