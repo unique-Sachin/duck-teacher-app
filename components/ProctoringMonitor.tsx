@@ -48,12 +48,6 @@ export function ProctoringMonitor({
         duration: 3000,
       });
     };
-
-    // Store reference to handler
-    const eventHandler = handleEvent;
-    return () => {
-      // Cleanup if needed
-    };
   }, [onEvent]);
 
   return (
