@@ -2,8 +2,21 @@ import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
 export default withAuth(
-  function middleware() {
-    // You can add additional logic here if needed
+  function middleware(req) {
+    const token = req.nextauth.token;
+    const path = req.nextUrl.pathname;
+    
+    // Admin-only routes
+    const adminRoutes = ['/admin', '/proctoring-client', '/api/admin'];
+    
+    // Check if current path is an admin route
+    const isAdminRoute = adminRoutes.some(route => path.startsWith(route));
+    
+    if (isAdminRoute && token?.role !== 'ADMIN') {
+      // Redirect non-admin users trying to access admin routes
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+    
     return NextResponse.next();
   },
   {
@@ -24,7 +37,10 @@ export const config = {
     "/session/:path*",
     "/result/:path*",
     "/history/:path*",
+    "/admin/:path*",
+    "/proctoring-client/:path*",
     "/api/interviews/:path*",
     "/api/duck-analysis/:path*",
+    "/api/admin/:path*",
   ],
 };

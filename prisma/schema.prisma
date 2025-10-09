@@ -18,6 +18,7 @@ model User {
   password      String? // hashed password - optional for OAuth users
   emailVerified DateTime?
   image         String?
+  role          UserRole  @default(CANDIDATE) // User role: ADMIN or CANDIDATE
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -27,6 +28,11 @@ model User {
   sessions   Session[]
 
   @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  CANDIDATE
 }
 
 // NextAuth Account model (for OAuth providers like Google)
@@ -240,4 +246,74 @@ enum RiskLevel {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+// Interview Role Configuration
+model InterviewRole {
+  id          String   @id // 'genai-developer', 'system-design', etc.
+  title       String
+  description String   @db.Text
+  duration    String // '45-60 min'
+  difficulty  String // 'Intermediate', 'Advanced', etc.
+  topics      String[] // Array of topic strings
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  questions InterviewQuestion[]
+
+  @@map("interview_roles")
+}
+
+// Interview Questions Bank
+model InterviewQuestion {
+  id          String               @id @default(cuid())
+  roleId      String
+  question    String               @db.Text
+  answer      String?              @db.Text // Correct/Expected answer
+  category    String // 'Fundamentals', 'System Design', etc.
+  difficulty  QuestionDifficulty
+  order       Int                  @default(0) // Order in which questions appear
+  isActive    Boolean              @default(true)
+
+  // Metadata
+  expectedTopics String[] // Topics that should be covered in the answer
+  timeEstimate   Int?     @default(5) // Estimated time in minutes
+
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  // Relations
+  role      InterviewRole          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  followUps QuestionFollowUp[]
+
+  @@index([roleId])
+  @@index([category])
+  @@index([difficulty])
+  @@index([isActive])
+  @@map("interview_questions")
+}
+
+// Follow-up Questions
+model QuestionFollowUp {
+  id         String @id @default(cuid())
+  questionId String
+  followUp   String @db.Text // The follow-up question text
+  answer     String? @db.Text // Expected answer for the follow-up
+  order      Int    @default(0) // Order of follow-ups
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  question InterviewQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("question_follow_ups")
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
 }

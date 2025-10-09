@@ -4,6 +4,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
+import { isAdminEmail } from './admin-utils';
 
 export const authOptions: NextAuthOptions = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,14 +58,23 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           image: user.image,
+          role: user.role,
         };
       },
     }),
   ],
   callbacks: {
     async signIn({ account, user }) {
-      // Allow sign in
-      if (account?.provider === 'google') {
+      // For OAuth providers (like Google), set admin role if email matches
+      if (account?.provider === 'google' && user.email) {
+        const role = isAdminEmail(user.email) ? 'ADMIN' : 'CANDIDATE';
+        
+        // Update user role in database
+        await prisma.user.update({
+          where: { email: user.email },
+          data: { role },
+        });
+        
         return true;
       }
       // For credentials provider
@@ -83,15 +93,29 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
       }
       if (account) {
         token.accessToken = account.access_token;
       }
+      
+      // Fetch user role from database if not present in token
+      if (!token.role && token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.role = token.role as string;
       }
       return session;
     },
